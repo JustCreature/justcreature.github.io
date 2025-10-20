@@ -28,6 +28,23 @@ import { camera, geolocation, fileUtils } from '../utils/camera';
 import type { FilmRoll, Exposure, ExposureSettings } from '../types';
 import { APERTURE, APERTURE_VALUES, SHUTTER_SPEED, SHUTTER_SPEED_VALUES } from '../types';
 
+// Add CSS for shutter effect animation
+const shutterEffectStyles = `
+@keyframes shutterEffect {
+    0% { opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { opacity: 0; }
+}
+`;
+
+// Inject styles into document head
+if (typeof document !== 'undefined') {
+    const styleSheet = document.createElement('style');
+    styleSheet.textContent = shutterEffectStyles;
+    document.head.appendChild(styleSheet);
+}
+
 interface CameraScreenProps {
     filmRoll: FilmRoll;
     exposures: Exposure[];
@@ -53,6 +70,7 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
 
     const [isCameraActive, setIsCameraActive] = useState(false);
     const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+    const [showShutterEffect, setShowShutterEffect] = useState(false);
 
     const currentExposureNumber = exposures.filter(e => e.filmRollId === filmRoll.id).length + 1;
     const exposuresLeft = filmRoll.totalExposures - (currentExposureNumber - 1);
@@ -169,6 +187,14 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
                 return;
             }
 
+            // Show shutter effect
+            setShowShutterEffect(true);
+            // Hide shutter effect after 1 second
+            setTimeout(() => {
+                setShowShutterEffect(false);
+            }, 500);
+
+            // Capture the image immediately
             const imageData = camera.captureImage(videoRef.current);
 
             // Validate captured image
@@ -203,6 +229,8 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
         } catch (error) {
             console.error('Error capturing photo:', error);
             alert(`Error capturing photo: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            // Make sure to hide shutter effect if there's an error
+            setShowShutterEffect(false);
         }
     };
 
@@ -305,17 +333,34 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
             {/* Camera View */}
             <Paper elevation={3} sx={{ flex: 1, position: 'relative', overflow: 'hidden', mb: 2 }}>
                 {isCameraActive ? (
-                    <video
-                        ref={videoRef}
-                        autoPlay
-                        playsInline
-                        muted
-                        style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover'
-                        }}
-                    />
+                    <>
+                        <video
+                            ref={videoRef}
+                            autoPlay
+                            playsInline
+                            muted
+                            style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover'
+                            }}
+                        />
+                        {/* Shutter Effect Overlay */}
+                        {showShutterEffect && (
+                            <Box
+                                sx={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    backgroundColor: 'black',
+                                    zIndex: 10,
+                                    animation: 'shutterEffect 500ms ease-in-out'
+                                }}
+                            />
+                        )}
+                    </>
                 ) : (
                     <Box
                         display="flex"
