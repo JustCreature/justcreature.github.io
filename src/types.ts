@@ -48,6 +48,51 @@ export interface AppSettings {
     version: string;
 }
 
+
+export const APERTURE = {
+    F_1_4: 'f/1.4',
+    F_2: 'f/2',
+    F_2_8: 'f/2.8',
+    F_4: 'f/4',
+    F_5_6: 'f/5.6',
+    F_8: 'f/8',
+    F_11: 'f/11',
+    F_16: 'f/16',
+    F_22: 'f/22'
+} as const;
+
+export const APERTURE_VALUES = Object.values(APERTURE);
+export type ApertureEnum = typeof APERTURE[keyof typeof APERTURE];
+
+export const SHUTTER_SPEED = {
+    S_1_4000: '1/4000',
+    S_1_2000: '1/2000',
+    S_1_1000: '1/1000',
+    S_1_500: '1/500',
+    S_1_250: '1/250',
+    S_1_125: '1/125',
+    S_1_60: '1/60',
+    S_1_30: '1/30',
+    S_1_15: '1/15',
+    S_1_8: '1/8',
+    S_1_4: '1/4',
+    S_1_2: '1/2',
+    S_1: '1',
+    S_2: '2',
+    S_4: '4',
+    S_8: '8',
+    BULB: 'BULB'
+} as const;
+
+export const SHUTTER_SPEED_VALUES = Object.values(SHUTTER_SPEED);
+export type ShutterSpeedEnum = typeof SHUTTER_SPEED[keyof typeof SHUTTER_SPEED];
+
+export interface ExposureSettings {
+    aperture: ApertureEnum;
+    shutterSpeed: ShutterSpeedEnum;
+    additionalInfo: string;
+}
+
 export interface AppState {
     currentFilmRoll: FilmRoll | null;
     filmRolls: FilmRoll[];

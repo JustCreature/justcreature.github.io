@@ -13,7 +13,9 @@ import {
     DialogActions,
     Stack,
     Chip,
-    Fab
+    Fab,
+    Select,
+    MenuItem
 } from '@mui/material';
 import {
     PhotoCamera,
@@ -23,7 +25,8 @@ import {
     ArrowBack
 } from '@mui/icons-material';
 import { camera, geolocation, fileUtils } from '../utils/camera';
-import type { FilmRoll, Exposure } from '../types';
+import type { FilmRoll, Exposure, ExposureSettings } from '../types';
+import { APERTURE, APERTURE_VALUES, SHUTTER_SPEED, SHUTTER_SPEED_VALUES } from '../types';
 
 interface CameraScreenProps {
     filmRoll: FilmRoll;
@@ -31,6 +34,8 @@ interface CameraScreenProps {
     onExposureTaken: (exposure: Exposure) => void;
     onOpenGallery: () => void;
     onBack?: () => void;
+    currentSettings: ExposureSettings;
+    setCurrentSettings: React.Dispatch<React.SetStateAction<ExposureSettings>>;
 }
 
 export const CameraScreen: React.FC<CameraScreenProps> = ({
@@ -38,7 +43,9 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
     exposures,
     onExposureTaken,
     onOpenGallery,
-    onBack
+    onBack,
+    currentSettings,
+    setCurrentSettings
 }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -46,11 +53,6 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
 
     const [isCameraActive, setIsCameraActive] = useState(false);
     const [showSettingsDialog, setShowSettingsDialog] = useState(false);
-    const [currentSettings, setCurrentSettings] = useState({
-        aperture: 'f/8',
-        shutterSpeed: '1/125',
-        additionalInfo: ''
-    });
 
     const currentExposureNumber = exposures.filter(e => e.filmRollId === filmRoll.id).length + 1;
     const exposuresLeft = filmRoll.totalExposures - (currentExposureNumber - 1);
@@ -437,20 +439,28 @@ getUserMedia: ${!!navigator.mediaDevices?.getUserMedia}
                 </DialogTitle>
                 <DialogContent>
                     <Stack spacing={3} sx={{ mt: 1 }}>
-                        <TextField
-                            fullWidth
-                            label="Aperture"
+                        <Select
                             value={currentSettings.aperture}
-                            onChange={(e) => setCurrentSettings(prev => ({ ...prev, aperture: e.target.value }))}
-                            placeholder="f/8"
-                        />
-                        <TextField
-                            fullWidth
-                            label="Shutter Speed"
+                            onChange={(e) => setCurrentSettings(prev => ({ ...prev, aperture: e.target.value as typeof APERTURE[keyof typeof APERTURE] }))}
+                            label="Aperture"
+                        >
+                            {APERTURE_VALUES.map((value) => (
+                                <MenuItem key={value} value={value}>
+                                    {value}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                        <Select
                             value={currentSettings.shutterSpeed}
-                            onChange={(e) => setCurrentSettings(prev => ({ ...prev, shutterSpeed: e.target.value }))}
-                            placeholder="1/125"
-                        />
+                            onChange={(e) => setCurrentSettings(prev => ({ ...prev, shutterSpeed: e.target.value as typeof SHUTTER_SPEED[keyof typeof SHUTTER_SPEED] }))}
+                            label="Shutter Speed"
+                        >
+                            {SHUTTER_SPEED_VALUES.map((value) => (
+                                <MenuItem key={value} value={value}>
+                                    {value}
+                                </MenuItem>
+                            ))}
+                        </Select>
                         <TextField
                             fullWidth
                             label="Additional Info"

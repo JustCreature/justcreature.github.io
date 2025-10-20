@@ -15,7 +15,8 @@ import { DetailsScreen } from './components/DetailsScreen';
 import { SettingsModal } from './components/SettingsModal';
 import { storage } from './utils/storage';
 // import { SyncManager } from './utils/syncManager'; // Temporarily disabled
-import type { FilmRoll, Exposure, AppState, Camera, AppSettings } from './types';
+import type { FilmRoll, Exposure, AppState, Camera, AppSettings, ExposureSettings } from './types';
+import { SHUTTER_SPEED, APERTURE } from './types';
 
 const theme = createTheme({
   palette: {
@@ -32,6 +33,12 @@ const theme = createTheme({
 });
 
 function App() {
+  const [exposureSettings, setExposureSettings] = useState<ExposureSettings>({
+    aperture: APERTURE.F_8,
+    shutterSpeed: SHUTTER_SPEED.S_1_125,
+    additionalInfo: ''
+  });
+
   const [appState, setAppState] = useState<AppState>({
     currentFilmRoll: null,
     filmRolls: [],
@@ -394,6 +401,8 @@ function App() {
             onExposureTaken={handleExposureTaken}
             onOpenGallery={() => navigateToScreen('gallery')}
             onBack={() => navigateToScreen('filmrolls')}
+            currentSettings={exposureSettings}
+            setCurrentSettings={setExposureSettings}
           />
         );
 
