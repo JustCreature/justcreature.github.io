@@ -14,7 +14,7 @@ import { GalleryScreen } from './components/GalleryScreen';
 import { DetailsScreen } from './components/DetailsScreen';
 import { SettingsModal } from './components/SettingsModal';
 import { storage } from './utils/storage';
-import { SyncManager } from './utils/syncManager';
+// import { SyncManager } from './utils/syncManager'; // Temporarily disabled
 import type { FilmRoll, Exposure, AppState, Camera, AppSettings } from './types';
 
 const theme = createTheme({
@@ -51,46 +51,58 @@ function App() {
   const [pwaUpdateAvailable, setPwaUpdateAvailable] = useState(false);
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [syncManager, setSyncManager] = useState<SyncManager | null>(null);
+  // const [syncManager, setSyncManager] = useState<SyncManager | null>(null); // Temporarily disabled
 
-  // Load data from localStorage on mount
+  // Load data from storage on mount and initialize IndexedDB
   useEffect(() => {
-    const currentFilmRoll = storage.getCurrentFilmRoll();
-    const filmRolls = storage.getFilmRolls();
-    const cameras = storage.getCameras();
-    const exposures = storage.getExposures();
-    const settings = storage.getSettings();
+    const initializeApp = async () => {
+      try {
+        // Initialize storage first
+        await storage.initialize();
+        console.log('✅ Storage initialized successfully');
 
-    setAppState(prev => ({
-      ...prev,
-      currentFilmRoll,
-      filmRolls,
-      cameras,
-      exposures,
-      settings,
-      currentScreen: 'filmrolls' // Always show main screen with film rolls tab
-    }));
+        // Load all data from IndexedDB
+        const [currentFilmRoll, filmRolls, cameras, exposures, settings] = await Promise.all([
+          storage.getCurrentFilmRoll(),
+          storage.getFilmRolls(),
+          storage.getCameras(),
+          storage.getExposures(),
+          storage.getSettings()
+        ]);
 
-    // Initialize sync manager
-    const manager = new SyncManager(settings);
-    setSyncManager(manager);
+        setAppState(prev => ({
+          ...prev,
+          currentFilmRoll,
+          filmRolls,
+          cameras,
+          exposures,
+          settings,
+          currentScreen: 'filmrolls' // Always show main screen with film rolls tab
+        }));
 
-    // Perform auto-sync if enabled
-    if (settings.googleDrive.enabled && settings.googleDrive.autoSync) {
-      manager.performAutoSync().then(result => {
-        if (result.success && result.action === 'download') {
-          // If data was downloaded from cloud, reload the app state
-          console.log('🔄 Sync:', result.message);
-          // Optionally refresh the page or reload data here
-        } else if (result.success && result.action === 'upload') {
-          console.log('☁️ Sync:', result.message);
-        } else if (!result.success) {
-          console.warn('⚠️ Sync failed:', result.message);
-        }
-      }).catch(error => {
-        console.error('Sync error:', error);
-      });
-    }
+        // Initialize sync manager (temporarily disabled while fixing storage)
+        // const manager = new SyncManager(settings);
+        // setSyncManager(manager);
+        console.log('Sync functionality temporarily disabled during storage migration');
+
+      } catch (error) {
+        console.error('❌ Failed to initialize app:', error);
+        // Set default empty state if initialization fails
+        setAppState(prev => ({
+          ...prev,
+          filmRolls: [],
+          cameras: [],
+          exposures: [],
+          currentFilmRoll: null,
+          settings: {
+            googleDrive: { enabled: false, autoSync: false },
+            version: '1.0.0'
+          }
+        }));
+      }
+    };
+
+    initializeApp();
   }, []);
 
   // PWA update handling - Manual updates only to preserve user data
@@ -149,58 +161,30 @@ function App() {
           window.location.hash = '';
           sessionStorage.removeItem('oauth_state');
 
-          // Update settings with the new token
-          const newSettings = {
-            ...appState.settings,
-            googleDrive: {
-              ...appState.settings.googleDrive,
-              accessToken: accessToken
-            }
-          };
-
-          storage.saveSettings(newSettings);
-          setAppState(prev => ({ ...prev, settings: newSettings }));
-
-          // Update sync manager
-          if (syncManager) {
-            syncManager.updateSettings(newSettings);
-          }
-
-          // Show settings modal and trigger sync after OAuth success
-          setShowSettings(true);
-
-          // Show success message and trigger sync
-          setTimeout(async () => {
-            try {
-              if (syncManager) {
-                const result = await syncManager.performManualSync();
-                if (result.success) {
-                  alert(`OAuth Success! ${result.message}`);
-                } else {
-                  alert(`OAuth successful, but sync failed: ${result.message}`);
-                }
-              }
-            } catch (error) {
-              alert(`OAuth successful, but sync failed: ${error}`);
-            }
-          }, 1000);
+          // OAuth temporarily disabled during storage migration
+          console.log('OAuth redirect detected but sync is temporarily disabled');
         }
       }
     };
 
     handleOAuthRedirect();
-  }, [appState.settings, syncManager]);
+  }, [appState.settings]); // syncManager dependency removed while disabled
 
-  const handleFilmRollCreated = (filmRoll: FilmRoll) => {
-    storage.saveFilmRoll(filmRoll);
-    storage.setCurrentFilmRoll(filmRoll);
+  const handleFilmRollCreated = async (filmRoll: FilmRoll) => {
+    try {
+      await storage.saveFilmRoll(filmRoll);
+      await storage.setCurrentFilmRoll(filmRoll);
 
-    setAppState(prev => ({
-      ...prev,
-      currentFilmRoll: filmRoll,
-      filmRolls: [...prev.filmRolls.filter(r => r.id !== filmRoll.id), filmRoll],
-      currentScreen: 'camera'
-    }));
+      setAppState(prev => ({
+        ...prev,
+        currentFilmRoll: filmRoll,
+        filmRolls: [...prev.filmRolls.filter(r => r.id !== filmRoll.id), filmRoll],
+        currentScreen: 'camera'
+      }));
+    } catch (error) {
+      console.error('Failed to create film roll:', error);
+      alert('Failed to save film roll. Please try again.');
+    }
   };
 
   const handleFilmRollSelected = (filmRoll: FilmRoll) => {
@@ -223,60 +207,84 @@ function App() {
   };
 
   // Camera handlers
-  const handleCameraCreated = (camera: Camera) => {
-    storage.saveCamera(camera);
-
-    setAppState(prev => ({
-      ...prev,
-      cameras: [...prev.cameras.filter(c => c.id !== camera.id), camera]
-    }));
+  const handleCameraCreated = async (camera: Camera) => {
+    try {
+      await storage.saveCamera(camera);
+      setAppState(prev => ({
+        ...prev,
+        cameras: [...prev.cameras.filter(c => c.id !== camera.id), camera]
+      }));
+    } catch (error) {
+      console.error('Failed to create camera:', error);
+      alert('Failed to save camera. Please try again.');
+    }
   };
 
-  const handleCameraUpdated = (camera: Camera) => {
-    storage.saveCamera(camera);
-
-    setAppState(prev => ({
-      ...prev,
-      cameras: prev.cameras.map(c => c.id === camera.id ? camera : c)
-    }));
+  const handleCameraUpdated = async (camera: Camera) => {
+    try {
+      await storage.saveCamera(camera);
+      setAppState(prev => ({
+        ...prev,
+        cameras: prev.cameras.map(c => c.id === camera.id ? camera : c)
+      }));
+    } catch (error) {
+      console.error('Failed to update camera:', error);
+      alert('Failed to update camera. Please try again.');
+    }
   };
 
-  const handleCameraDeleted = (cameraId: string) => {
-    storage.deleteCamera(cameraId);
-
-    setAppState(prev => ({
-      ...prev,
-      cameras: prev.cameras.filter(c => c.id !== cameraId)
-    }));
+  const handleCameraDeleted = async (cameraId: string) => {
+    try {
+      await storage.deleteCamera(cameraId);
+      setAppState(prev => ({
+        ...prev,
+        cameras: prev.cameras.filter(c => c.id !== cameraId)
+      }));
+    } catch (error) {
+      console.error('Failed to delete camera:', error);
+      alert('Failed to delete camera. Please try again.');
+    }
   };
 
-  const handleExposureTaken = (exposure: Exposure) => {
-    storage.saveExposure(exposure);
-
-    setAppState(prev => ({
-      ...prev,
-      exposures: [...prev.exposures.filter(e => e.id !== exposure.id), exposure]
-    }));
+  const handleExposureTaken = async (exposure: Exposure) => {
+    try {
+      await storage.saveExposure(exposure);
+      setAppState(prev => ({
+        ...prev,
+        exposures: [...prev.exposures.filter(e => e.id !== exposure.id), exposure]
+      }));
+    } catch (error) {
+      console.error('Failed to save photo:', error);
+      alert('Failed to save photo. Please try again.');
+    }
   };
 
-  const handleExposureUpdate = (exposure: Exposure) => {
-    storage.saveExposure(exposure);
-
-    setAppState(prev => ({
-      ...prev,
-      exposures: prev.exposures.map(e => e.id === exposure.id ? exposure : e),
-      selectedExposure: exposure
-    }));
+  const handleExposureUpdate = async (exposure: Exposure) => {
+    try {
+      await storage.saveExposure(exposure);
+      setAppState(prev => ({
+        ...prev,
+        exposures: prev.exposures.map(e => e.id === exposure.id ? exposure : e),
+        selectedExposure: exposure
+      }));
+    } catch (error) {
+      console.error('Failed to update photo:', error);
+      alert('Failed to update photo. Please try again.');
+    }
   };
 
-  const handleExposureDelete = (exposureId: string) => {
-    storage.deleteExposure(exposureId);
-
-    setAppState(prev => ({
-      ...prev,
-      exposures: prev.exposures.filter(e => e.id !== exposureId),
-      selectedExposure: prev.selectedExposure?.id === exposureId ? null : prev.selectedExposure
-    }));
+  const handleExposureDelete = async (exposureId: string) => {
+    try {
+      await storage.deleteExposure(exposureId);
+      setAppState(prev => ({
+        ...prev,
+        exposures: prev.exposures.filter(e => e.id !== exposureId),
+        selectedExposure: prev.selectedExposure?.id === exposureId ? null : prev.selectedExposure
+      }));
+    } catch (error) {
+      console.error('Failed to delete photo:', error);
+      alert('Failed to delete photo. Please try again.');
+    }
   };
 
   const handlePwaUpdate = () => {
@@ -331,28 +339,24 @@ function App() {
     }));
   };
 
-  const handleSettingsChange = (newSettings: AppSettings) => {
-    storage.saveSettings(newSettings);
-    setAppState(prev => ({
-      ...prev,
-      settings: newSettings
-    }));
+  const handleSettingsChange = async (newSettings: AppSettings) => {
+    try {
+      await storage.saveSettings(newSettings);
+      setAppState(prev => ({
+        ...prev,
+        settings: newSettings
+      }));
 
-    // Update sync manager with new settings
-    syncManager?.updateSettings(newSettings);
+      // Sync manager temporarily disabled
+      console.log('Settings updated (sync manager disabled)');
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      alert('Failed to save settings. Please try again.');
+    }
   };
 
   const handleManualSync = async () => {
-    if (!syncManager) {
-      throw new Error('Sync manager not initialized');
-    }
-
-    const result = await syncManager.performManualSync();
-    if (!result.success) {
-      throw new Error(result.message);
-    }
-
-    console.log('Manual sync completed:', result.message);
+    throw new Error('Sync functionality temporarily disabled during storage migration');
   };
 
   const renderCurrentScreen = () => {
@@ -461,7 +465,6 @@ function App() {
       </Snackbar>
     </ThemeProvider>
   );
-
 }
 
 export default App;

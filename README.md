@@ -32,11 +32,13 @@ A Progressive Web App (PWA) built with React, TypeScript, and Material-UI for tr
 - View capture time and location
 - Save changes with validation
 
-### 💾 Local Storage & PWA
-- All data stored locally on device
-- Works offline after initial load
-- PWA manifest for mobile installation
-- Service worker for caching
+### 💾 Advanced Storage System & PWA
+- **IndexedDB Storage**: High-capacity storage (50MB+) for photos and metadata
+- **Automatic Migration**: Seamlessly upgrades from localStorage to IndexedDB
+- **Quota Management**: No more "storage quota exceeded" errors
+- **Offline-First**: All data stored locally on device
+- **PWA Features**: Installation, offline support, and service worker caching
+- **Storage Resilience**: Automatic fallback to localStorage if IndexedDB fails
 
 ### 📤 Import/Export
 - **Export to Local**: Download all photos and metadata as files
