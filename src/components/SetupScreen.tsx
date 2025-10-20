@@ -5,7 +5,6 @@ import {
     Typography,
     TextField,
     Button,
-    Paper,
     Stack,
     FormControl,
     InputLabel,
@@ -66,8 +65,8 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
     };
 
     return (
-        <Container maxWidth="sm" sx={{ height: '100vh', display: 'flex', alignItems: 'center' }}>
-            <Paper elevation={3} sx={{ width: '100%', p: 4 }}>
+        <Container maxWidth="sm" sx={{ pb: 4, pt: 4 }}>
+            <Stack>
                 <Box textAlign="center" mb={4}>
                     <PhotoCamera sx={{ fontSize: 64, color: 'primary.main', mb: 2 }} />
                     <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
@@ -143,7 +142,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
                         </Button>
                     </Stack>
                 </Box>
-            </Paper>
+            </Stack>
         </Container>
     );
 };

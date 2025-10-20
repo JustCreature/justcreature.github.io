@@ -27,7 +27,8 @@ import {
     PhotoLibrary,
     MoreVert,
     Edit,
-    Delete
+    Delete,
+    Close
 } from '@mui/icons-material';
 import type { FilmRoll, Exposure, Camera } from '../types';
 import { SetupScreen } from './SetupScreen';
@@ -349,14 +350,20 @@ export const FilmRollListScreen: React.FC<FilmRollListScreenProps> = ({
                 onClose={() => setShowCreateDialog(false)}
                 maxWidth="sm"
                 fullWidth
-                PaperProps={{
-                    sx: { m: 2 }
-                }}
             >
                 <DialogTitle>
-                    <Typography variant="h6">Create New Film Roll</Typography>
+                    <Stack direction={'row'} justifyContent="space-between" spacing={1}>
+                        <Typography variant="h6">Create New Film Roll</Typography>
+                        <IconButton
+                            size="small"
+                            onClick={() => setShowCreateDialog(false)}
+                            sx={{ mt: -0.5 }}
+                        >
+                            <Close />
+                        </IconButton>
+                    </Stack>
                 </DialogTitle>
-                <DialogContent>
+                <DialogContent sx={{ p: 0 }}>
                     <SetupScreen
                         cameras={cameras}
                         onFilmRollCreated={handleCreateFilmRoll}
@@ -411,14 +418,20 @@ export const FilmRollListScreen: React.FC<FilmRollListScreenProps> = ({
                 onClose={() => setEditingFilmRoll(null)}
                 maxWidth="sm"
                 fullWidth
-                PaperProps={{
-                    sx: { m: 2 }
-                }}
             >
                 <DialogTitle>
-                    <Typography variant="h6">Edit Film Roll</Typography>
+                    <Stack direction={'row'} justifyContent="space-between" spacing={1}>
+                        <Typography variant="h6">Edit Film Roll</Typography>
+                        <IconButton
+                            size="small"
+                            onClick={() => setEditingFilmRoll(null)}
+                            sx={{ mt: -0.5 }}
+                        >
+                            <Close />
+                        </IconButton>
+                    </Stack>
                 </DialogTitle>
-                <DialogContent>
+                <DialogContent sx={{ p: 0 }}>
                     <SetupScreen
                         cameras={cameras}
                         editingFilmRoll={editingFilmRoll}
@@ -426,6 +439,6 @@ export const FilmRollListScreen: React.FC<FilmRollListScreenProps> = ({
                     />
                 </DialogContent>
             </Dialog>
-        </Box>
+        </Box >
     );
 };

@@ -187,9 +187,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             onClose={handleCancel}
             maxWidth="md"
             fullWidth
-            PaperProps={{
-                sx: { m: 2 }
-            }}
         >
             <DialogTitle>
                 <Box display="flex" alignItems="center" justifyContent="space-between">
