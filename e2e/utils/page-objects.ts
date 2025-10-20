@@ -20,7 +20,7 @@ import { Page } from '@playwright/test';
   }n
  */
 export class FilmTrackerPage {
-  constructor(public page: Page) {}
+  constructor(public page: Page) { }
 
   // Navigation
   async goto() {
@@ -29,6 +29,8 @@ export class FilmTrackerPage {
 
   async waitForLoadState() {
     await this.page.waitForLoadState('domcontentloaded');
+    // Wait for React app to mount by checking for main content
+    await this.page.waitForSelector('[class*="MuiContainer-root"], #root > div', { timeout: 15000 });
   }
 
   // Main Screen Elements
@@ -108,15 +110,15 @@ export class FilmTrackerPage {
   }
 
   get apertureChip() {
-    return this.page.getByText(/f\//i).first();
+    return this.page.locator('.MuiChip-root').filter({ hasText: /f\// }).first();
   }
 
   get shutterSpeedChip() {
-    return this.page.getByText(/1\//i).first();
+    return this.page.locator('.MuiChip-root').filter({ hasText: /1\// }).first();
   }
 
   get notesChip() {
-    return this.page.getByText(/notes/i).first();
+    return this.page.locator('.MuiChip-root').filter({ hasText: /info/i }).first();
   }
 
   get backButton() {
@@ -126,6 +128,18 @@ export class FilmTrackerPage {
   // Settings Dialog
   get settingsDialog() {
     return this.page.getByRole('dialog');
+  }
+
+  get apertureSelect() {
+    return this.settingsDialog.locator('div[role="combobox"]').first();
+  }
+
+  get shutterSpeedSelect() {
+    return this.settingsDialog.locator('div[role="combobox"]').nth(1);
+  }
+
+  get additionalInfoInput() {
+    return this.settingsDialog.getByLabel(/additional info/i);
   }
 
   get closeSettingsButton() {
@@ -141,20 +155,20 @@ export class FilmTrackerPage {
   }) {
     await this.createFilmRollButton.click();
     await this.filmNameInput.fill(data.name);
-    
+
     if (data.iso) {
       await this.isoInput.fill(data.iso);
     }
-    
+
     if (data.exposures) {
       await this.exposuresInput.fill(data.exposures);
     }
-    
+
     if (data.camera) {
       await this.cameraSelect.click();
       await this.page.getByText(data.camera).click();
     }
-    
+
     await this.startFilmRollButton.click();
   }
 
@@ -166,12 +180,57 @@ export class FilmTrackerPage {
     await this.addCameraButton.click();
     await this.cameraMakeInput.fill(data.make);
     await this.cameraModelInput.fill(data.model);
-    
+
     if (data.lens) {
       await this.lensInput.fill(data.lens);
     }
-    
+
     await this.addCameraSubmitButton.click();
+  }
+
+  async configureCameraSettings(data: {
+    aperture?: string;
+    shutterSpeed?: string;
+    notes?: string;
+  }) {
+    // Open settings if not already open
+    await this.apertureChip.click();
+
+    // Wait for dialog to be fully loaded
+    await this.settingsDialog.waitFor({ state: 'visible' });
+
+    // Wait a bit for dialog content to stabilize
+    await this.page.waitForTimeout(500);
+
+    // Configure aperture
+    if (data.aperture) {
+      // Use simpler selector - just get the first combobox in the dialog
+      const apertureSelect = this.settingsDialog.locator('div[role="combobox"]').first();
+      await apertureSelect.waitFor({ state: 'visible' });
+      await apertureSelect.click();
+
+      await this.page.getByRole('option', { name: data.aperture }).waitFor({ state: 'visible' });
+      await this.page.getByRole('option', { name: data.aperture }).click();
+    }
+
+    // Configure shutter speed
+    if (data.shutterSpeed) {
+      // Use simpler selector - get the second combobox in the dialog
+      const shutterSpeedSelect = this.settingsDialog.locator('div[role="combobox"]').nth(1);
+      await shutterSpeedSelect.waitFor({ state: 'visible' });
+      await shutterSpeedSelect.click();
+
+      await this.page.getByRole('option', { name: data.shutterSpeed }).waitFor({ state: 'visible' });
+      await this.page.getByRole('option', { name: data.shutterSpeed }).click();
+    }
+
+    // Configure notes
+    if (data.notes) {
+      await this.additionalInfoInput.fill(data.notes);
+    }
+
+    // Close settings
+    await this.closeSettingsButton.click();
   }
 
   async getFilmRollCards() {

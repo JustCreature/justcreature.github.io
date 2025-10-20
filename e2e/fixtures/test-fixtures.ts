@@ -31,7 +31,12 @@ export const test = base.extend<{
       sessionStorage.clear();
     });
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    // Use domcontentloaded instead of networkidle for faster, more reliable loading
+    await page.waitForLoadState('domcontentloaded');
+
+    // Wait for React app to mount
+    await page.waitForSelector('body', { timeout: 10000 });
+
     await use();
   },
 });
