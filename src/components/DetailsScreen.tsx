@@ -11,7 +11,9 @@ import {
     Chip,
     Dialog,
     DialogTitle,
-    DialogContent
+    DialogContent,
+    Select,
+    MenuItem
 } from '@mui/material';
 import {
     ArrowBack,
@@ -25,7 +27,7 @@ import {
     Delete
 } from '@mui/icons-material';
 import { camera, fileUtils } from '../utils/camera';
-import type { Exposure } from '../types';
+import { APERTURE, APERTURE_VALUES, SHUTTER_SPEED, SHUTTER_SPEED_VALUES, type Exposure } from '../types';
 
 interface DetailsScreenProps {
     exposure: Exposure;
@@ -195,18 +197,28 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
                         <Stack spacing={2}>
                             {isEditing ? (
                                 <>
-                                    <TextField
-                                        fullWidth
-                                        label="Aperture"
+                                    <Select
                                         value={editedExposure.aperture}
-                                        onChange={(e) => setEditedExposure(prev => ({ ...prev, aperture: e.target.value }))}
-                                    />
-                                    <TextField
-                                        fullWidth
-                                        label="Shutter Speed"
+                                        onChange={(e) => setEditedExposure(prev => ({ ...prev, aperture: e.target.value as typeof APERTURE[keyof typeof APERTURE] }))}
+                                        label="Aperture"
+                                    >
+                                        {APERTURE_VALUES.map((value) => (
+                                            <MenuItem key={value} value={value}>
+                                                {value}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                    <Select
                                         value={editedExposure.shutterSpeed}
-                                        onChange={(e) => setEditedExposure(prev => ({ ...prev, shutterSpeed: e.target.value }))}
-                                    />
+                                        onChange={(e) => setEditedExposure(prev => ({ ...prev, shutterSpeed: e.target.value as typeof SHUTTER_SPEED[keyof typeof SHUTTER_SPEED] }))}
+                                        label="Shutter Speed"
+                                    >
+                                        {SHUTTER_SPEED_VALUES.map((value) => (
+                                            <MenuItem key={value} value={value}>
+                                                {value}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
                                 </>
                             ) : (
                                 <Stack direction="row" spacing={1}>
