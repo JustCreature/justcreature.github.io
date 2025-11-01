@@ -77,11 +77,10 @@ def apply_metadata(folder_path):
             "-GPSLatitudeRef=N" if latitude else "",
             f"-GPSLongitude={longitude}" if longitude else "",
             "-GPSLongitudeRef=E" if longitude else "",
-            "-GPSAltitude=35",
-            "-City=Berlin",
-            "-Country=Germany",
-            "-SubLocation=Hansaviertel",
-            "-ImageDescription=Berlin, Hansaviertel — Zenit ET + Helios 44, Kodak Gold 200",
+            # "-GPSAltitude=35",
+            # "-City=Berlin",
+            "-Country=Austria",
+            f"-ImageDescription=Film: {data['filmRoll'].get('name', 'Unknown')}",
             tif_path
         ]
 
