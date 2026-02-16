@@ -25,12 +25,24 @@ npm run version:major   # Bump major version
 
 ### Testing
 ```bash
-npm run test:e2e           # Run Playwright E2E tests
-npm run test:e2e:ui        # Run E2E tests with Playwright UI
-npm run test:e2e:headed    # Run E2E tests in headed mode
-npm run test:e2e:debug     # Debug E2E tests
-npm run test:e2e:report    # Show test report
+npm run test:e2e           # Run Playwright E2E tests (all 80 tests across 5 browsers)
+npm run test:e2e:ui        # Run E2E tests with Playwright UI (interactive mode)
+npm run test:e2e:headed    # Run E2E tests in headed mode (see browser)
+npm run test:e2e:debug     # Debug E2E tests with inspector
+npm run test:e2e:report    # Show test report (opens HTML report in browser)
 ```
+
+**Test Coverage:**
+- **app-navigation.spec.ts**: Basic app functionality, tab navigation, settings, responsive design
+- **camera-management.spec.ts**: Camera CRUD operations, special characters handling
+- **film-roll-management.spec.ts**: Film roll creation, validation, navigation
+- **photography-workflow.spec.ts**: Complete photography flow, camera settings, aperture/shutter options
+
+**Test Browsers:**
+- Desktop: Chromium, Firefox, WebKit
+- Mobile: Mobile Chrome, Mobile Safari
+
+**Page Objects:** Located in `e2e/utils/page-objects.ts` for maintainable test selectors
 
 ### Python Metadata Script
 ```bash
@@ -167,11 +179,16 @@ Located in `src/utils/exportImport.ts`:
 - Automatic location capture with Geolocation API (10min cache, high accuracy)
 - Exposure counter with remaining shots display
 
-### Camera Management
-- Define equipment: make, model, lens
-- Auto-generated camera names (e.g., "Zenit ET, Helios 44-2 58mm f/2")
-- Link cameras to film rolls
-- CRUD operations for camera library
+### Camera & Lens Management
+- **Three top-level tabs**: Film Rolls, Cameras, Lenses (flat navigation structure)
+- **Camera Management**: Define equipment (make, model), auto-generated names
+- **Lens Management**: Separate lens library with max aperture and focal length specs
+  - Prime lenses: Single focal length (e.g., 50mm)
+  - Zoom lenses: Min/max focal length range (e.g., 24-70mm)
+  - Max aperture limits available aperture values in camera settings
+- **Mid-roll lens changes**: Select different lens per exposure
+- **EI (Exposure Index)**: Override film ISO per exposure
+- CRUD operations for both cameras and lenses
 
 ### Data Persistence & Privacy
 - **100% Local Storage**: All data stays on device via IndexedDB

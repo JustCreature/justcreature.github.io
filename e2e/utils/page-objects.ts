@@ -189,6 +189,7 @@ export class FilmTrackerPage {
   }
 
   async configureCameraSettings(data: {
+    lens?: string;
     aperture?: string;
     shutterSpeed?: string;
     notes?: string;
@@ -199,24 +200,36 @@ export class FilmTrackerPage {
     // Wait for dialog to be fully loaded
     await this.settingsDialog.waitFor({ state: 'visible' });
 
-    // Wait a bit for dialog content to stabilize
-    await this.page.waitForTimeout(500);
+    // Wait a bit for dialog content to stabilize and for all selects to render
+    await this.page.waitForTimeout(1000);
 
-    // Configure aperture
+    // Configure lens first (if provided) as it affects aperture options
+    if (data.lens) {
+      const lensSelect = this.page.getByLabel(/^lens$/i);
+      await lensSelect.waitFor({ state: 'visible' });
+      await lensSelect.click();
+
+      await this.page.getByRole('option', { name: new RegExp(data.lens, 'i') }).waitFor({ state: 'visible' });
+      await this.page.getByRole('option', { name: new RegExp(data.lens, 'i') }).click();
+
+      // Wait for lens selection to update aperture options
+      await this.page.waitForTimeout(300);
+    }
+
+    // Configure aperture - use label-based selector
     if (data.aperture) {
-      // Use simpler selector - just get the first combobox in the dialog
-      const apertureSelect = this.settingsDialog.locator('div[role="combobox"]').first();
-      await apertureSelect.waitFor({ state: 'visible' });
+      // Try to find aperture select - it might be the 2nd or 3rd select depending on lens presence
+      const apertureSelect = this.settingsDialog.getByLabel(/aperture/i);
+      await apertureSelect.waitFor({ state: 'visible', timeout: 10000 });
       await apertureSelect.click();
 
       await this.page.getByRole('option', { name: data.aperture }).waitFor({ state: 'visible' });
       await this.page.getByRole('option', { name: data.aperture }).click();
     }
 
-    // Configure shutter speed
+    // Configure shutter speed - use label-based selector
     if (data.shutterSpeed) {
-      // Use simpler selector - get the second combobox in the dialog
-      const shutterSpeedSelect = this.settingsDialog.locator('div[role="combobox"]').nth(1);
+      const shutterSpeedSelect = this.page.getByLabel(/shutter speed/i);
       await shutterSpeedSelect.waitFor({ state: 'visible' });
       await shutterSpeedSelect.click();
 
