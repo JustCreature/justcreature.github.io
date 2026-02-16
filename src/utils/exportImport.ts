@@ -1,4 +1,4 @@
-import type { FilmRoll, Exposure } from '../types';
+import type { FilmRoll, Exposure, Lens } from '../types';
 import { fileUtils } from './camera';
 
 export interface ExportData {
@@ -22,37 +22,52 @@ export interface ExposureExportData {
         address?: string;
     };
     capturedAt: string; // ISO string format
+    // New optional fields (backward compatible)
+    ei?: number;
+    lensId?: string;
+    lensName?: string; // Denormalized for easier external use
+    focalLength?: number;
 }
 
 export const exportUtils = {
     // Convert exposure data to export format
-    prepareExportData: (filmRoll: FilmRoll, exposures: Exposure[]): ExportData => {
+    prepareExportData: (filmRoll: FilmRoll, exposures: Exposure[], lenses: Lens[]): ExportData => {
         const filmExposures = exposures.filter(e => e.filmRollId === filmRoll.id);
 
-        const exportExposures: ExposureExportData[] = filmExposures.map(exposure => ({
-            id: exposure.id,
-            filmRollId: exposure.filmRollId,
-            exposureNumber: exposure.exposureNumber,
-            aperture: exposure.aperture,
-            shutterSpeed: exposure.shutterSpeed,
-            additionalInfo: exposure.additionalInfo,
-            imageName: `exposure_${exposure.exposureNumber}_${exposure.id}.jpg`,
-            location: exposure.location,
-            capturedAt: exposure.capturedAt.toISOString()
-        }));
+        const exportExposures: ExposureExportData[] = filmExposures.map(exposure => {
+            // Find lens name for denormalization
+            const lens = lenses.find(l => l.id === exposure.lensId);
+
+            return {
+                id: exposure.id,
+                filmRollId: exposure.filmRollId,
+                exposureNumber: exposure.exposureNumber,
+                aperture: exposure.aperture,
+                shutterSpeed: exposure.shutterSpeed,
+                additionalInfo: exposure.additionalInfo,
+                imageName: `exposure_${exposure.exposureNumber}_${exposure.id}.jpg`,
+                location: exposure.location,
+                capturedAt: exposure.capturedAt.toISOString(),
+                // New fields
+                ei: exposure.ei,
+                lensId: exposure.lensId,
+                lensName: lens?.name,
+                focalLength: exposure.focalLength
+            };
+        });
 
         return {
             filmRoll,
             exposures: exportExposures,
             exportedAt: new Date().toISOString(),
-            version: '1.0.0'
+            version: '2.0.0' // Bump version for new fields
         };
     },
 
     // Export JSON only with native share functionality
-    exportJsonOnly: async (filmRoll: FilmRoll, exposures: Exposure[]): Promise<void> => {
+    exportJsonOnly: async (filmRoll: FilmRoll, exposures: Exposure[], lenses: Lens[]): Promise<void> => {
         try {
-            const exportData = exportUtils.prepareExportData(filmRoll, exposures);
+            const exportData = exportUtils.prepareExportData(filmRoll, exposures, lenses);
             const jsonString = JSON.stringify(exportData, null, 2);
             const fileName = `${filmRoll.name.replace(/\s+/g, '_')}_metadata.json`;
 
@@ -80,7 +95,7 @@ export const exportUtils = {
             console.error('JSON export error:', error);
 
             // Final fallback: Download without share
-            const exportData = exportUtils.prepareExportData(filmRoll, exposures);
+            const exportData = exportUtils.prepareExportData(filmRoll, exposures, lenses);
             const jsonString = JSON.stringify(exportData, null, 2);
             const fileName = `${filmRoll.name.replace(/\s+/g, '_')}_metadata.json`;
             fileUtils.downloadData(jsonString, fileName, 'application/json');
@@ -88,9 +103,9 @@ export const exportUtils = {
     },
 
     // Create and download a zip-like structure (using multiple files)
-    exportToLocal: async (filmRoll: FilmRoll, exposures: Exposure[], folderName: string): Promise<void> => {
+    exportToLocal: async (filmRoll: FilmRoll, exposures: Exposure[], lenses: Lens[], folderName: string): Promise<void> => {
         try {
-            const exportData = exportUtils.prepareExportData(filmRoll, exposures);
+            const exportData = exportUtils.prepareExportData(filmRoll, exposures, lenses);
             const filmExposures = exposures.filter(e => e.filmRollId === filmRoll.id);
 
             // Create metadata JSON file
@@ -183,7 +198,11 @@ export const exportUtils = {
                     additionalInfo: exportExposure.additionalInfo,
                     imageData,
                     location: exportExposure.location,
-                    capturedAt: new Date(exportExposure.capturedAt)
+                    capturedAt: new Date(exportExposure.capturedAt),
+                    // Import new fields (backward compatible)
+                    ei: exportExposure.ei,
+                    lensId: exportExposure.lensId,
+                    focalLength: exportExposure.focalLength
                 });
             }
 
@@ -212,7 +231,7 @@ export const googleDriveUtils = {
     },
 
     // Export to Google Drive (placeholder implementation)
-    exportToGoogleDrive: async (filmRoll: FilmRoll, exposures: Exposure[], folderName: string): Promise<void> => {
+    exportToGoogleDrive: async (filmRoll: FilmRoll, exposures: Exposure[], lenses: Lens[], folderName: string): Promise<void> => {
         // This would require Google Drive API implementation
         // For now, we'll show an informational message and fall back to local export
 
@@ -220,7 +239,7 @@ export const googleDriveUtils = {
             alert('Google Drive integration not available. Exporting locally instead.\n\nTo enable Google Drive:\n1. Set up Google Drive API credentials\n2. Include the Google APIs JavaScript client');
 
             // Fall back to local export
-            return exportUtils.exportToLocal(filmRoll, exposures, folderName);
+            return exportUtils.exportToLocal(filmRoll, exposures, lenses, folderName);
         }
 
         try {

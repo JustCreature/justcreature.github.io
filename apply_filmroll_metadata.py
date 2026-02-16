@@ -53,6 +53,11 @@ def apply_metadata(folder_path):
         latitude = exp.get("location", {}).get("latitude")
         longitude = exp.get("location", {}).get("longitude")
 
+        # Get new fields (v2.0.0)
+        ei = exp.get("ei")  # Exposure Index (may differ from ISO)
+        lens_name = exp.get("lensName", "")  # Denormalized lens name
+        focal_length = exp.get("focalLength")  # Focal length in mm
+
         # Parse datetime into Exif format
         try:
             dt_obj = datetime.fromisoformat(captured_at.replace("Z", "+00:00"))
@@ -60,17 +65,27 @@ def apply_metadata(folder_path):
         except Exception:
             capture_date = ""
 
+        # Use EI if available, otherwise fall back to film ISO
+        iso_value = ei if ei else data['filmRoll'].get('iso', 200)
+
+        # Use lens name from exposure if available (for lenses that changed mid-roll)
+        # Otherwise fall back to hardcoded default
+        lens_model = lens_name if lens_name else "-"
+
+        # Use focal length from exposure if available, otherwise default
+        focal_length_str = f"{focal_length}mm" if focal_length else "-"
+
         # Build exiftool args
         args = [
             EXIFTOOL_PATH,
             "-overwrite_original",
             "-Make=Zenit",
             "-Model=Zenit ET",
-            "-LensModel=Helios 44-2 58mm f/2",
+            f"-LensModel={lens_model}",
             f"-FNumber={aperture}" if aperture else "",
             f"-ExposureTime={shutter}" if shutter else "",
-            f"-ISO={data['filmRoll'].get('iso', 200)}",
-            "-FocalLength=58mm",
+            f"-ISO={iso_value}",
+            f"-FocalLength={focal_length_str}",
             f"-UserComment={add_info}" if add_info else "",
             f"-DateTimeOriginal={capture_date}" if capture_date else "",
             f"-GPSLatitude={latitude}" if latitude else "",

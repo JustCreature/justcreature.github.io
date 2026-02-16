@@ -30,13 +30,14 @@ import {
     Delete,
     Close
 } from '@mui/icons-material';
-import type { FilmRoll, Exposure, Camera } from '../types';
+import type { FilmRoll, Exposure, Camera, Lens } from '../types';
 import { SetupScreen } from './SetupScreen';
 import { storage } from '../utils/storage';
 
 interface FilmRollListScreenProps {
     filmRolls: FilmRoll[];
     cameras: Camera[];
+    lenses: Lens[];
     exposures: Exposure[];
     onFilmRollSelected: (filmRoll: FilmRoll) => void;
     onFilmRollCreated: (filmRoll: FilmRoll) => void;
@@ -46,6 +47,7 @@ interface FilmRollListScreenProps {
 export const FilmRollListScreen: React.FC<FilmRollListScreenProps> = ({
     filmRolls,
     cameras,
+    lenses,
     exposures,
     onFilmRollSelected,
     onFilmRollCreated,
@@ -366,6 +368,7 @@ export const FilmRollListScreen: React.FC<FilmRollListScreenProps> = ({
                 <DialogContent sx={{ p: 0 }}>
                     <SetupScreen
                         cameras={cameras}
+                        lenses={lenses}
                         onFilmRollCreated={handleCreateFilmRoll}
                     />
                 </DialogContent>
@@ -434,6 +437,7 @@ export const FilmRollListScreen: React.FC<FilmRollListScreenProps> = ({
                 <DialogContent sx={{ p: 0 }}>
                     <SetupScreen
                         cameras={cameras}
+                        lenses={lenses}
                         editingFilmRoll={editingFilmRoll}
                         onFilmRollUpdated={handleUpdateFilmRoll}
                     />

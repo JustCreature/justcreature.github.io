@@ -144,7 +144,7 @@ export const CameraManagementScreen: React.FC<CameraManagementScreenProps> = ({
                 <Toolbar>
                     <CameraAlt sx={{ mr: 2 }} />
                     <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                        Camera Equipment
+                        Camera Management
                     </Typography>
                     <Typography variant="body2" color="inherit" sx={{ opacity: 0.8 }}>
                         {cameras.length} camera{cameras.length !== 1 ? 's' : ''}
@@ -231,7 +231,7 @@ export const CameraManagementScreen: React.FC<CameraManagementScreenProps> = ({
                 )}
             </Container>
 
-            {/* Add Camera FAB */}
+            {/* Add FAB */}
             <Fab
                 color="primary"
                 aria-label="add camera"

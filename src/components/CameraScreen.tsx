@@ -15,7 +15,10 @@ import {
     Chip,
     Fab,
     Select,
-    MenuItem
+    MenuItem,
+    FormControl,
+    InputLabel,
+    Slider
 } from '@mui/material';
 import {
     PhotoCamera,
@@ -25,8 +28,8 @@ import {
     ArrowBack
 } from '@mui/icons-material';
 import { camera, geolocation, fileUtils } from '../utils/camera';
-import type { FilmRoll, Exposure, ExposureSettings } from '../types';
-import { APERTURE, APERTURE_VALUES, SHUTTER_SPEED, SHUTTER_SPEED_VALUES } from '../types';
+import type { FilmRoll, Exposure, ExposureSettings, Lens } from '../types';
+import { APERTURE, APERTURE_VALUES, SHUTTER_SPEED, SHUTTER_SPEED_VALUES, EI_VALUES } from '../types';
 
 // Add CSS for shutter effect animation
 const shutterEffectStyles = `
@@ -47,8 +50,10 @@ if (typeof document !== 'undefined') {
 
 interface CameraScreenProps {
     filmRoll: FilmRoll;
+    lenses: Lens[];
     exposures: Exposure[];
     onExposureTaken: (exposure: Exposure) => void;
+    onFilmRollUpdated: (filmRoll: FilmRoll) => void;
     onOpenGallery: () => void;
     onBack?: () => void;
     currentSettings: ExposureSettings;
@@ -57,8 +62,10 @@ interface CameraScreenProps {
 
 export const CameraScreen: React.FC<CameraScreenProps> = ({
     filmRoll,
+    lenses,
     exposures,
     onExposureTaken,
+    onFilmRollUpdated,
     onOpenGallery,
     onBack,
     currentSettings,
@@ -71,6 +78,7 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
     const [isCameraActive, setIsCameraActive] = useState(false);
     const [showSettingsDialog, setShowSettingsDialog] = useState(false);
     const [showShutterEffect, setShowShutterEffect] = useState(false);
+    const [showLensChangeDialog, setShowLensChangeDialog] = useState(false);
 
     const currentExposureNumber = exposures.filter(e => e.filmRollId === filmRoll.id).length + 1;
     const exposuresLeft = filmRoll.totalExposures - (currentExposureNumber - 1);
@@ -218,7 +226,10 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
                 additionalInfo: currentSettings.additionalInfo,
                 imageData,
                 location,
-                capturedAt: new Date()
+                capturedAt: new Date(),
+                ei: currentSettings.ei,
+                lensId: currentSettings.lensId,
+                focalLength: currentSettings.focalLength
             };
 
             onExposureTaken(exposure);
@@ -286,7 +297,10 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
                 additionalInfo: currentSettings.additionalInfo,
                 imageData,
                 location,
-                capturedAt: new Date()
+                capturedAt: new Date(),
+                ei: currentSettings.ei,
+                lensId: currentSettings.lensId,
+                focalLength: currentSettings.focalLength
             };
 
             console.log('Creating exposure:', exposure.id);
@@ -304,6 +318,22 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
 
     const openSettingsDialog = () => {
         setShowSettingsDialog(true);
+    };
+
+    const handleLensChange = (newLensId: string) => {
+        const updatedFilmRoll = {
+            ...filmRoll,
+            currentLensId: newLensId || undefined
+        };
+        onFilmRollUpdated(updatedFilmRoll);
+
+        // Also update current settings
+        setCurrentSettings(prev => ({
+            ...prev,
+            lensId: newLensId || undefined
+        }));
+
+        setShowLensChangeDialog(false);
     };
 
     return (
@@ -407,8 +437,37 @@ getUserMedia: ${!!navigator.mediaDevices?.getUserMedia}
                 )}
             </Paper>
 
+            {/* Current Lens - Shows film roll's current lens */}
+            {filmRoll.currentLensId && (() => {
+                const currentLens = lenses.find(l => l.id === filmRoll.currentLensId);
+                return currentLens ? (
+                    <Box mb={2}>
+                        <Chip
+                            label={`📷 ${currentLens.name}`}
+                            onClick={() => setShowLensChangeDialog(true)}
+                            variant="filled"
+                            color="primary"
+                            size="medium"
+                            sx={{ fontWeight: 'bold' }}
+                        />
+                        <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                            Click to change lens
+                        </Typography>
+                    </Box>
+                ) : null;
+            })()}
+
             {/* Settings Chips */}
             <Stack direction="row" spacing={1} mb={2} flexWrap="wrap" gap={1}>
+                {!filmRoll.currentLensId && (
+                    <Chip
+                        label="+ Select Lens"
+                        onClick={() => setShowLensChangeDialog(true)}
+                        variant="outlined"
+                        size="small"
+                        color="default"
+                    />
+                )}
                 <Chip
                     label={`${currentSettings.aperture}`}
                     onClick={openSettingsDialog}
@@ -421,6 +480,23 @@ getUserMedia: ${!!navigator.mediaDevices?.getUserMedia}
                     variant="outlined"
                     size="small"
                 />
+                {currentSettings.ei && (
+                    <Chip
+                        label={`EI ${currentSettings.ei}`}
+                        onClick={openSettingsDialog}
+                        variant="outlined"
+                        size="small"
+                        color="secondary"
+                    />
+                )}
+                {currentSettings.focalLength && (
+                    <Chip
+                        label={`${currentSettings.focalLength}mm`}
+                        onClick={openSettingsDialog}
+                        variant="outlined"
+                        size="small"
+                    />
+                )}
                 <Chip
                     label="Info"
                     onClick={openSettingsDialog}
@@ -484,28 +560,158 @@ getUserMedia: ${!!navigator.mediaDevices?.getUserMedia}
                 </DialogTitle>
                 <DialogContent>
                     <Stack spacing={3} sx={{ mt: 1 }}>
-                        <Select
-                            value={currentSettings.aperture}
-                            onChange={(e) => setCurrentSettings(prev => ({ ...prev, aperture: e.target.value as typeof APERTURE[keyof typeof APERTURE] }))}
-                            label="Aperture"
-                        >
-                            {APERTURE_VALUES.map((value) => (
-                                <MenuItem key={value} value={value}>
-                                    {value}
+                        {/* Lens Selection */}
+                        <FormControl fullWidth>
+                            <InputLabel>Lens</InputLabel>
+                            <Select
+                                value={currentSettings.lensId || ''}
+                                onChange={(e) => {
+                                    const newLensId = e.target.value;
+                                    setCurrentSettings(prev => {
+                                        const lens = lenses.find(l => l.id === newLensId);
+                                        return {
+                                            ...prev,
+                                            lensId: newLensId || undefined,
+                                            // Set default focal length for prime lenses
+                                            focalLength: lens?.focalLength || prev.focalLength
+                                        };
+                                    });
+                                }}
+                                label="Lens"
+                            >
+                                <MenuItem value="">
+                                    <em>None selected</em>
                                 </MenuItem>
-                            ))}
-                        </Select>
-                        <Select
-                            value={currentSettings.shutterSpeed}
-                            onChange={(e) => setCurrentSettings(prev => ({ ...prev, shutterSpeed: e.target.value as typeof SHUTTER_SPEED[keyof typeof SHUTTER_SPEED] }))}
-                            label="Shutter Speed"
-                        >
-                            {SHUTTER_SPEED_VALUES.map((value) => (
-                                <MenuItem key={value} value={value}>
-                                    {value}
-                                </MenuItem>
-                            ))}
-                        </Select>
+                                {lenses.map((lens) => (
+                                    <MenuItem key={lens.id} value={lens.id}>
+                                        {lens.name} ({lens.maxAperture})
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+
+                        {/* Aperture - limited by lens */}
+                        <FormControl fullWidth>
+                            <InputLabel>Aperture</InputLabel>
+                            <Select
+                                value={currentSettings.aperture}
+                                onChange={(e) => setCurrentSettings(prev => ({ ...prev, aperture: e.target.value as typeof APERTURE[keyof typeof APERTURE] }))}
+                                label="Aperture"
+                            >
+                                {(() => {
+                                    const selectedLens = lenses.find(l => l.id === currentSettings.lensId);
+                                    const maxAperture = selectedLens?.maxAperture;
+
+                                    // If lens selected, filter apertures >= maxAperture
+                                    const availableApertures = maxAperture
+                                        ? APERTURE_VALUES.filter(v => {
+                                            const vNum = parseFloat(v.replace('f/', ''));
+                                            const maxNum = parseFloat(maxAperture.replace('f/', ''));
+                                            return vNum >= maxNum;
+                                        })
+                                        : APERTURE_VALUES;
+
+                                    return availableApertures.map((value) => (
+                                        <MenuItem key={value} value={value}>
+                                            {value}
+                                        </MenuItem>
+                                    ));
+                                })()}
+                            </Select>
+                        </FormControl>
+
+                        {/* Shutter Speed */}
+                        <FormControl fullWidth>
+                            <InputLabel>Shutter Speed</InputLabel>
+                            <Select
+                                value={currentSettings.shutterSpeed}
+                                onChange={(e) => setCurrentSettings(prev => ({ ...prev, shutterSpeed: e.target.value as typeof SHUTTER_SPEED[keyof typeof SHUTTER_SPEED] }))}
+                                label="Shutter Speed"
+                            >
+                                {SHUTTER_SPEED_VALUES.map((value) => (
+                                    <MenuItem key={value} value={value}>
+                                        {value}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+
+                        {/* EI (Exposure Index) */}
+                        <Box>
+                            <FormControl fullWidth>
+                                <InputLabel>EI (Exposure Index)</InputLabel>
+                                <Select
+                                    value={currentSettings.ei?.toString() || 'film'}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        if (value === 'film') {
+                                            setCurrentSettings(prev => ({ ...prev, ei: undefined }));
+                                        } else if (value === 'custom') {
+                                            setCurrentSettings(prev => ({ ...prev, ei: undefined }));
+                                        } else {
+                                            setCurrentSettings(prev => ({ ...prev, ei: parseInt(value) }));
+                                        }
+                                    }}
+                                    label="EI (Exposure Index)"
+                                >
+                                    <MenuItem value="film">
+                                        <em>Use film ISO ({filmRoll.iso})</em>
+                                    </MenuItem>
+                                    {EI_VALUES.map((value) => (
+                                        <MenuItem key={value} value={value.toString()}>
+                                            {value}
+                                        </MenuItem>
+                                    ))}
+                                    <MenuItem value="custom">
+                                        <em>Custom value...</em>
+                                    </MenuItem>
+                                </Select>
+                            </FormControl>
+                            {currentSettings.ei !== undefined && !EI_VALUES.includes(currentSettings.ei as any) && (
+                                <TextField
+                                    fullWidth
+                                    label="Custom EI"
+                                    type="number"
+                                    value={currentSettings.ei || ''}
+                                    onChange={(e) => setCurrentSettings(prev => ({ ...prev, ei: parseInt(e.target.value) || undefined }))}
+                                    inputProps={{ min: 1, max: 10000 }}
+                                    sx={{ mt: 2 }}
+                                />
+                            )}
+                        </Box>
+
+                        {/* Focal Length Slider */}
+                        <Box>
+                            <Typography gutterBottom>
+                                Focal Length: {currentSettings.focalLength || 'Not set'}mm
+                            </Typography>
+                            <Slider
+                                value={currentSettings.focalLength || 50}
+                                onChange={(_, value) => setCurrentSettings(prev => ({ ...prev, focalLength: value as number }))}
+                                min={1}
+                                max={200}
+                                step={1}
+                                marks={[
+                                    { value: 1, label: '1mm' },
+                                    { value: 50, label: '50mm' },
+                                    { value: 100, label: '100mm' },
+                                    { value: 200, label: '200mm' }
+                                ]}
+                                valueLabelDisplay="auto"
+                            />
+                            <TextField
+                                fullWidth
+                                label="Manual Focal Length (mm)"
+                                type="number"
+                                value={currentSettings.focalLength || ''}
+                                onChange={(e) => setCurrentSettings(prev => ({ ...prev, focalLength: parseInt(e.target.value) || undefined }))}
+                                inputProps={{ min: 1, max: 10000 }}
+                                size="small"
+                                sx={{ mt: 1 }}
+                            />
+                        </Box>
+
+                        {/* Additional Info */}
                         <TextField
                             fullWidth
                             label="Additional Info"
@@ -520,6 +726,52 @@ getUserMedia: ${!!navigator.mediaDevices?.getUserMedia}
                 <DialogActions>
                     <Button onClick={() => setShowSettingsDialog(false)} variant="contained">
                         Done
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Lens Change Dialog */}
+            <Dialog open={showLensChangeDialog} onClose={() => setShowLensChangeDialog(false)} maxWidth="sm" fullWidth>
+                <DialogTitle>
+                    <Box display="flex" alignItems="center" justifyContent="space-between">
+                        <Typography variant="h6">Change Lens</Typography>
+                        <IconButton onClick={() => setShowLensChangeDialog(false)}>
+                            <Close />
+                        </IconButton>
+                    </Box>
+                </DialogTitle>
+                <DialogContent>
+                    <Stack spacing={2}>
+                        <Typography variant="body2" color="text.secondary">
+                            Select a lens to use for upcoming shots. This will update the film roll and all new exposures will use this lens.
+                        </Typography>
+                        <FormControl fullWidth>
+                            <InputLabel>Lens</InputLabel>
+                            <Select
+                                value={filmRoll.currentLensId || ''}
+                                onChange={(e) => handleLensChange(e.target.value)}
+                                label="Lens"
+                            >
+                                <MenuItem value="">
+                                    <em>None selected</em>
+                                </MenuItem>
+                                {lenses.map((lens) => (
+                                    <MenuItem key={lens.id} value={lens.id}>
+                                        {lens.name} ({lens.maxAperture})
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                        {lenses.length === 0 && (
+                            <Typography variant="body2" color="warning.main">
+                                No lenses available. Add lenses in the Cameras tab.
+                            </Typography>
+                        )}
+                    </Stack>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setShowLensChangeDialog(false)}>
+                        Close
                     </Button>
                 </DialogActions>
             </Dialog>

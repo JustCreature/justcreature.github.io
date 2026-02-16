@@ -1,9 +1,20 @@
+export interface Lens {
+    id: string;
+    name: string;
+    maxAperture: string; // e.g., "f/1.4", "f/2.8"
+    focalLengthMin?: number; // For zoom lenses
+    focalLengthMax?: number; // For zoom lenses
+    focalLength?: number; // For prime lenses
+    createdAt: Date;
+}
+
 export interface Camera {
     id: string;
     make: string;
     model: string;
-    lens: string;
-    name: string; // Auto-generated: "Make Model, Lens"
+    lens: string; // Kept for backward compatibility, deprecated
+    lenses?: string[]; // Array of lens IDs
+    name: string; // Auto-generated: "Make Model"
     createdAt: Date;
 }
 
@@ -11,8 +22,10 @@ export interface FilmRoll {
     id: string;
     name: string;
     iso: number;
+    ei?: number; // Exposure Index (can differ from ISO)
     totalExposures: number;
     cameraId?: string;
+    currentLensId?: string; // Track currently used lens
     createdAt: Date;
 }
 
@@ -30,6 +43,10 @@ export interface Exposure {
         address?: string;
     };
     capturedAt: Date;
+    // New optional fields for backward compatibility
+    ei?: number; // Exposure Index used for this shot
+    lensId?: string; // Lens used for this shot
+    focalLength?: number; // Focal length in mm
 }
 
 export interface GoogleDriveSettings {
@@ -93,12 +110,23 @@ export interface ExposureSettings {
     aperture: ApertureEnum;
     shutterSpeed: ShutterSpeedEnum;
     additionalInfo: string;
+    ei?: number;
+    lensId?: string;
+    focalLength?: number;
 }
+
+// Common EI/ISO values
+export const EI_VALUES = [
+    25, 32, 40, 50, 64, 80, 100, 125, 160, 200,
+    250, 320, 400, 500, 640, 800, 1000, 1250, 1600,
+    2000, 2500, 3200, 4000, 5000, 6400
+] as const;
 
 export interface AppState {
     currentFilmRoll: FilmRoll | null;
     filmRolls: FilmRoll[];
     cameras: Camera[];
+    lenses: Lens[];
     exposures: Exposure[];
     currentScreen: 'filmrolls' | 'setup' | 'camera' | 'gallery' | 'details';
     selectedExposure: Exposure | null;

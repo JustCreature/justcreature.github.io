@@ -33,26 +33,31 @@ import {
     Save,
     Share,
     Close,
-    Delete
+    Delete,
+    ContentCopy
 } from '@mui/icons-material';
-import type { Exposure, FilmRoll } from '../types';
+import type { Exposure, FilmRoll, Lens } from '../types';
 import { exportUtils, googleDriveUtils } from '../utils/exportImport';
 import { storage } from '../utils/storage';
 
 interface GalleryScreenProps {
     filmRoll: FilmRoll;
+    lenses: Lens[];
     exposures: Exposure[];
     onExposureSelect: (exposure: Exposure) => void;
     onExposureDelete?: (exposureId: string) => void;
+    onExposureUpdate?: (exposure: Exposure) => void;
     onBack: () => void;
     onDataImported?: (filmRoll: FilmRoll, exposures: Exposure[]) => void;
 }
 
 export const GalleryScreen: React.FC<GalleryScreenProps> = ({
     filmRoll,
+    lenses,
     exposures,
     onExposureSelect,
     onExposureDelete,
+    onExposureUpdate,
     onBack,
     onDataImported
 }) => {
@@ -65,7 +70,29 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
     const [isProcessing, setIsProcessing] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const filmExposures = exposures.filter(exposure => exposure.filmRollId === filmRoll.id);
+    const filmExposures = exposures.filter(exposure => exposure.filmRollId === filmRoll.id)
+        .sort((a, b) => a.exposureNumber - b.exposureNumber);
+
+    const handleCopyFromPrevious = async (currentExposure: Exposure, previousExposure: Exposure) => {
+        if (!onExposureUpdate) return;
+
+        const updatedExposure: Exposure = {
+            ...currentExposure,
+            aperture: previousExposure.aperture,
+            shutterSpeed: previousExposure.shutterSpeed,
+            additionalInfo: previousExposure.additionalInfo,
+            ei: previousExposure.ei,
+            lensId: previousExposure.lensId,
+            focalLength: previousExposure.focalLength
+        };
+
+        try {
+            onExposureUpdate(updatedExposure);
+        } catch (error) {
+            console.error('Failed to copy settings:', error);
+            alert('Failed to copy settings. Please try again.');
+        }
+    };
 
     const handleExport = async () => {
         if (exportMethod !== 'jsononly' && !exportFolderName.trim()) {
@@ -76,11 +103,11 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
         setIsProcessing(true);
         try {
             if (exportMethod === 'googledrive') {
-                await googleDriveUtils.exportToGoogleDrive(filmRoll, filmExposures, exportFolderName);
+                await googleDriveUtils.exportToGoogleDrive(filmRoll, filmExposures, lenses, exportFolderName);
             } else if (exportMethod === 'jsononly') {
-                await exportUtils.exportJsonOnly(filmRoll, filmExposures);
+                await exportUtils.exportJsonOnly(filmRoll, filmExposures, lenses);
             } else {
-                await exportUtils.exportToLocal(filmRoll, filmExposures, exportFolderName);
+                await exportUtils.exportToLocal(filmRoll, filmExposures, lenses, exportFolderName);
             }
             setShowExportDialog(false);
             setExportFolderName('');
@@ -268,8 +295,25 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
             {/* Exposures Grid */}
             <Box sx={{ flex: 1, overflowY: 'auto' }}>
                 <Stack spacing={2}>
-                    {filmExposures.map((exposure) => (
+                    {filmExposures.map((exposure, index) => {
+                        const previousExposure = index > 0 ? filmExposures[index - 1] : null;
+                        const lens = lenses.find(l => l.id === exposure.lensId);
+
+                        return (
                         <Box key={exposure.id}>
+                            {/* Copy from previous button */}
+                            {previousExposure && onExposureUpdate && (
+                                <Box display="flex" justifyContent="flex-end" mb={1}>
+                                    <Button
+                                        size="small"
+                                        startIcon={<ContentCopy />}
+                                        onClick={() => handleCopyFromPrevious(exposure, previousExposure)}
+                                        variant="outlined"
+                                    >
+                                        Copy from previous
+                                    </Button>
+                                </Box>
+                            )}
                             <Card
                                 onClick={() => onExposureSelect(exposure)}
                                 sx={{
@@ -318,7 +362,15 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
                                             </Box>
                                         </Box>
 
-                                        <Stack direction="row" spacing={1} mb={1}>
+                                        <Stack direction="row" spacing={1} mb={1} flexWrap="wrap" gap={0.5}>
+                                            {lens && (
+                                                <Chip
+                                                    label={lens.name}
+                                                    size="small"
+                                                    variant="outlined"
+                                                    color="primary"
+                                                />
+                                            )}
                                             <Chip
                                                 label={exposure.aperture}
                                                 size="small"
@@ -329,6 +381,21 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
                                                 size="small"
                                                 variant="outlined"
                                             />
+                                            {exposure.ei && (
+                                                <Chip
+                                                    label={`EI ${exposure.ei}`}
+                                                    size="small"
+                                                    variant="outlined"
+                                                    color="secondary"
+                                                />
+                                            )}
+                                            {exposure.focalLength && (
+                                                <Chip
+                                                    label={`${exposure.focalLength}mm`}
+                                                    size="small"
+                                                    variant="outlined"
+                                                />
+                                            )}
                                         </Stack>
 
                                         {exposure.location && (
@@ -347,7 +414,8 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
                                 </Box>
                             </Card>
                         </Box>
-                    ))}
+                        );
+                    })}
                 </Stack>
             </Box>
 

@@ -11,11 +11,13 @@ import {
 import {
     PhotoLibrary,
     CameraAlt,
-    Settings
+    Settings,
+    CameraEnhance
 } from '@mui/icons-material';
-import type { FilmRoll, Exposure, Camera } from '../types';
+import type { FilmRoll, Exposure, Camera, Lens } from '../types';
 import { FilmRollListScreen } from './FilmRollListScreen';
 import { CameraManagementScreen } from './CameraManagementScreen';
+import { LensManagementScreen } from './LensManagementScreen';
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -41,6 +43,7 @@ function TabPanel(props: TabPanelProps) {
 interface MainScreenProps {
     filmRolls: FilmRoll[];
     cameras: Camera[];
+    lenses: Lens[];
     exposures: Exposure[];
     onFilmRollSelected: (filmRoll: FilmRoll) => void;
     onFilmRollCreated: (filmRoll: FilmRoll) => void;
@@ -48,12 +51,16 @@ interface MainScreenProps {
     onCameraCreated: (camera: Camera) => void;
     onCameraUpdated: (camera: Camera) => void;
     onCameraDeleted: (cameraId: string) => void;
+    onLensCreated: (lens: Lens) => void;
+    onLensUpdated: (lens: Lens) => void;
+    onLensDeleted: (lensId: string) => void;
     onSettingsClick?: () => void;
 }
 
 export const MainScreen: React.FC<MainScreenProps> = ({
     filmRolls,
     cameras,
+    lenses,
     exposures,
     onFilmRollSelected,
     onFilmRollCreated,
@@ -61,6 +68,9 @@ export const MainScreen: React.FC<MainScreenProps> = ({
     onCameraCreated,
     onCameraUpdated,
     onCameraDeleted,
+    onLensCreated,
+    onLensUpdated,
+    onLensDeleted,
     onSettingsClick
 }) => {
     const [currentTab, setCurrentTab] = useState(0);
@@ -112,6 +122,12 @@ export const MainScreen: React.FC<MainScreenProps> = ({
                         iconPosition="start"
                         sx={{ minHeight: 48 }}
                     />
+                    <Tab
+                        icon={<CameraEnhance />}
+                        label="Lenses"
+                        iconPosition="start"
+                        sx={{ minHeight: 48 }}
+                    />
                 </Tabs>
             </AppBar>
 
@@ -119,6 +135,7 @@ export const MainScreen: React.FC<MainScreenProps> = ({
                 <FilmRollListScreen
                     filmRolls={filmRolls}
                     cameras={cameras}
+                    lenses={lenses}
                     exposures={exposures}
                     onFilmRollSelected={onFilmRollSelected}
                     onFilmRollCreated={onFilmRollCreated}
@@ -132,6 +149,15 @@ export const MainScreen: React.FC<MainScreenProps> = ({
                     onCameraCreated={onCameraCreated}
                     onCameraUpdated={onCameraUpdated}
                     onCameraDeleted={onCameraDeleted}
+                />
+            </TabPanel>
+
+            <TabPanel value={currentTab} index={2}>
+                <LensManagementScreen
+                    lenses={lenses}
+                    onLensCreated={onLensCreated}
+                    onLensUpdated={onLensUpdated}
+                    onLensDeleted={onLensDeleted}
                 />
             </TabPanel>
         </Box>

@@ -15,7 +15,7 @@ import { DetailsScreen } from './components/DetailsScreen';
 import { SettingsModal } from './components/SettingsModal';
 import { storage } from './utils/storage';
 // import { SyncManager } from './utils/syncManager'; // Temporarily disabled
-import type { FilmRoll, Exposure, AppState, Camera, AppSettings, ExposureSettings } from './types';
+import type { FilmRoll, Exposure, AppState, Camera, Lens, AppSettings, ExposureSettings } from './types';
 import { SHUTTER_SPEED, APERTURE } from './types';
 
 const theme = createTheme({
@@ -43,6 +43,7 @@ function App() {
     currentFilmRoll: null,
     filmRolls: [],
     cameras: [],
+    lenses: [],
     exposures: [],
     currentScreen: 'filmrolls',
     selectedExposure: null,
@@ -69,10 +70,11 @@ function App() {
         console.log('✅ Storage initialized successfully');
 
         // Load all data from IndexedDB
-        const [currentFilmRoll, filmRolls, cameras, exposures, settings] = await Promise.all([
+        const [currentFilmRoll, filmRolls, cameras, lenses, exposures, settings] = await Promise.all([
           storage.getCurrentFilmRoll(),
           storage.getFilmRolls(),
           storage.getCameras(),
+          storage.getLenses(),
           storage.getExposures(),
           storage.getSettings()
         ]);
@@ -82,6 +84,7 @@ function App() {
           currentFilmRoll,
           filmRolls,
           cameras,
+          lenses,
           exposures,
           settings,
           currentScreen: 'filmrolls' // Always show main screen with film rolls tab
@@ -99,6 +102,7 @@ function App() {
           ...prev,
           filmRolls: [],
           cameras: [],
+          lenses: [],
           exposures: [],
           currentFilmRoll: null,
           settings: {
@@ -213,6 +217,24 @@ function App() {
     }));
   };
 
+  const handleFilmRollUpdated = async (filmRoll: FilmRoll) => {
+    try {
+      await storage.saveFilmRoll(filmRoll);
+      if (appState.currentFilmRoll?.id === filmRoll.id) {
+        await storage.setCurrentFilmRoll(filmRoll);
+      }
+
+      setAppState(prev => ({
+        ...prev,
+        currentFilmRoll: prev.currentFilmRoll?.id === filmRoll.id ? filmRoll : prev.currentFilmRoll,
+        filmRolls: prev.filmRolls.map(r => r.id === filmRoll.id ? filmRoll : r)
+      }));
+    } catch (error) {
+      console.error('Failed to update film roll:', error);
+      alert('Failed to update film roll. Please try again.');
+    }
+  };
+
   // Camera handlers
   const handleCameraCreated = async (camera: Camera) => {
     try {
@@ -250,6 +272,46 @@ function App() {
     } catch (error) {
       console.error('Failed to delete camera:', error);
       alert('Failed to delete camera. Please try again.');
+    }
+  };
+
+  // Lens handlers
+  const handleLensCreated = async (lens: Lens) => {
+    try {
+      await storage.saveLens(lens);
+      setAppState(prev => ({
+        ...prev,
+        lenses: [...prev.lenses.filter(l => l.id !== lens.id), lens]
+      }));
+    } catch (error) {
+      console.error('Failed to create lens:', error);
+      alert('Failed to save lens. Please try again.');
+    }
+  };
+
+  const handleLensUpdated = async (lens: Lens) => {
+    try {
+      await storage.saveLens(lens);
+      setAppState(prev => ({
+        ...prev,
+        lenses: prev.lenses.map(l => l.id === lens.id ? lens : l)
+      }));
+    } catch (error) {
+      console.error('Failed to update lens:', error);
+      alert('Failed to update lens. Please try again.');
+    }
+  };
+
+  const handleLensDeleted = async (lensId: string) => {
+    try {
+      await storage.deleteLens(lensId);
+      setAppState(prev => ({
+        ...prev,
+        lenses: prev.lenses.filter(l => l.id !== lensId)
+      }));
+    } catch (error) {
+      console.error('Failed to delete lens:', error);
+      alert('Failed to delete lens. Please try again.');
     }
   };
 
@@ -374,12 +436,16 @@ function App() {
             filmRolls={appState.filmRolls}
             exposures={appState.exposures}
             cameras={appState.cameras}
+            lenses={appState.lenses}
             onFilmRollSelected={handleFilmRollSelected}
             onFilmRollCreated={handleFilmRollCreated}
             onFilmRollDeleted={handleFilmRollDeleted}
             onCameraCreated={handleCameraCreated}
             onCameraUpdated={handleCameraUpdated}
             onCameraDeleted={handleCameraDeleted}
+            onLensCreated={handleLensCreated}
+            onLensUpdated={handleLensUpdated}
+            onLensDeleted={handleLensDeleted}
             onSettingsClick={() => setShowSettings(true)}
           />
         );
@@ -388,6 +454,7 @@ function App() {
         return (
           <SetupScreen
             cameras={appState.cameras}
+            lenses={appState.lenses}
             onFilmRollCreated={handleFilmRollCreated}
           />
         );
@@ -397,8 +464,10 @@ function App() {
         return (
           <CameraScreen
             filmRoll={appState.currentFilmRoll}
+            lenses={appState.lenses}
             exposures={appState.exposures}
             onExposureTaken={handleExposureTaken}
+            onFilmRollUpdated={handleFilmRollUpdated}
             onOpenGallery={() => navigateToScreen('gallery')}
             onBack={() => navigateToScreen('filmrolls')}
             currentSettings={exposureSettings}
@@ -411,9 +480,11 @@ function App() {
         return (
           <GalleryScreen
             filmRoll={appState.currentFilmRoll}
+            lenses={appState.lenses}
             exposures={appState.exposures}
             onExposureSelect={(exposure) => navigateToScreen('details', exposure)}
             onExposureDelete={handleExposureDelete}
+            onExposureUpdate={handleExposureUpdate}
             onBack={() => navigateToScreen('camera')}
             onDataImported={handleDataImported}
           />
@@ -424,6 +495,7 @@ function App() {
         return (
           <DetailsScreen
             exposure={appState.selectedExposure}
+            lenses={appState.lenses}
             onExposureUpdate={handleExposureUpdate}
             onExposureDelete={handleExposureDelete}
             onBack={() => navigateToScreen('gallery')}
