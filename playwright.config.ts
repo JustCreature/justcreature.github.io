@@ -1,4 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
+import fs from 'fs';
+
+// Check if SSL certificates exist (same logic as vite.config.ts)
+const certKeyPath = './localhost+4-key.pem';
+const certPath = './localhost+4.pem';
+const useHttps = fs.existsSync(certKeyPath) && fs.existsSync(certPath);
+
+// Use http in CI (no certs), https locally (with certs)
+const protocol = useHttps ? 'https' : 'http';
+const baseURL = `${protocol}://localhost:5173`;
 
 /**
  * @see https://playwright.dev/docs/test-configuration
@@ -22,7 +32,7 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions */
   use: {
     /* Base URL to use in actions like `await page.goto('/')` */
-    baseURL: 'https://localhost:5173',
+    baseURL,
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
     /* Take screenshot on failure */
@@ -61,7 +71,7 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: {
     command: 'npm run dev',
-    url: 'https://localhost:5173',
+    url: baseURL,
     reuseExistingServer: !process.env.CI,
     ignoreHTTPSErrors: true,
   },
