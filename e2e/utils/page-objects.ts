@@ -2,22 +2,7 @@ import { Page } from '@playwright/test';
 
 /**
  * Page Object Model for Film Photography Tracker
- * Provides reusable methods for interacting with  async createCamera(data: {
-    make: string;
-    model: string;
-    lens?: string;
-  }) {
-    await this.addCameraButton.click();
-    await this.addCameraButton.waitFor({ state: 'hidden' }); // Wait for navigation
-    await this.cameraMakeInput.fill(data.make);
-    await this.cameraModelInput.fill(data.model);
-    
-    if (data.lens) {
-      await this.cameraLensInput.fill(data.lens);
-    }
-    
-    await this.addCameraSubmitButton.click();
-  }n
+ * Provides reusable methods for interacting with the application
  */
 export class FilmTrackerPage {
   constructor(public page: Page) { }
@@ -42,12 +27,20 @@ export class FilmTrackerPage {
     return this.page.getByRole('tab', { name: /cameras/i });
   }
 
+  get lensesTab() {
+    return this.page.getByRole('tab', { name: /lenses/i });
+  }
+
   get createFilmRollButton() {
     return this.page.getByRole('button', { name: /create film roll/i });
   }
 
   get addCameraButton() {
     return this.page.getByRole('button', { name: 'Add Camera', exact: true });
+  }
+
+  get addLensButton() {
+    return this.page.locator('button[aria-label="add lens"]');
   }
 
   get settingsButton() {
@@ -90,6 +83,31 @@ export class FilmTrackerPage {
 
   get lensInput() {
     return this.page.getByLabel(/lens/i);
+  }
+
+  // Lens Management
+  get lensNameInput() {
+    return this.page.getByLabel(/lens name/i);
+  }
+
+  get maxApertureSelect() {
+    return this.page.getByLabel(/maximum aperture/i);
+  }
+
+  get focalLengthInput() {
+    return this.page.getByLabel(/^focal length \(mm\)$/i);
+  }
+
+  get minFocalLengthInput() {
+    return this.page.getByLabel(/^min focal length \(mm\)$/i);
+  }
+
+  get maxFocalLengthInput() {
+    return this.page.getByLabel(/^max focal length \(mm\)$/i);
+  }
+
+  get addLensSubmitButton() {
+    return this.page.getByRole('button', { name: /add.*lens/i }).first();
   }
 
   get addCameraSubmitButton() {
@@ -175,20 +193,38 @@ export class FilmTrackerPage {
   async createCamera(data: {
     make: string;
     model: string;
-    lens?: string;
   }) {
     await this.addCameraButton.click();
     await this.cameraMakeInput.fill(data.make);
     await this.cameraModelInput.fill(data.model);
-
-    if (data.lens) {
-      await this.lensInput.fill(data.lens);
-    }
-
     await this.addCameraSubmitButton.click();
   }
 
+  async createLens(data: {
+    name: string;
+    maxAperture: string;
+    focalLength?: string;
+    minFocalLength?: string;
+    maxFocalLength?: string;
+  }) {
+    await this.addLensButton.click();
+    await this.lensNameInput.fill(data.name);
+
+    await this.maxApertureSelect.click();
+    await this.page.getByRole('option', { name: data.maxAperture, exact: true }).click();
+
+    if (data.focalLength) {
+      await this.focalLengthInput.fill(data.focalLength);
+    } else if (data.minFocalLength && data.maxFocalLength) {
+      await this.minFocalLengthInput.fill(data.minFocalLength);
+      await this.maxFocalLengthInput.fill(data.maxFocalLength);
+    }
+
+    await this.addLensSubmitButton.click();
+  }
+
   async configureCameraSettings(data: {
+    lens?: string;
     aperture?: string;
     shutterSpeed?: string;
     notes?: string;
@@ -199,24 +235,36 @@ export class FilmTrackerPage {
     // Wait for dialog to be fully loaded
     await this.settingsDialog.waitFor({ state: 'visible' });
 
-    // Wait a bit for dialog content to stabilize
-    await this.page.waitForTimeout(500);
+    // Wait a bit for dialog content to stabilize and for all selects to render
+    await this.page.waitForTimeout(1000);
 
-    // Configure aperture
+    // Configure lens first (if provided) as it affects aperture options
+    if (data.lens) {
+      const lensSelect = this.page.getByLabel(/^lens$/i);
+      await lensSelect.waitFor({ state: 'visible' });
+      await lensSelect.click();
+
+      await this.page.getByRole('option', { name: new RegExp(data.lens, 'i') }).waitFor({ state: 'visible' });
+      await this.page.getByRole('option', { name: new RegExp(data.lens, 'i') }).click();
+
+      // Wait for lens selection to update aperture options
+      await this.page.waitForTimeout(300);
+    }
+
+    // Configure aperture - use label-based selector
     if (data.aperture) {
-      // Use simpler selector - just get the first combobox in the dialog
-      const apertureSelect = this.settingsDialog.locator('div[role="combobox"]').first();
-      await apertureSelect.waitFor({ state: 'visible' });
+      // Try to find aperture select - it might be the 2nd or 3rd select depending on lens presence
+      const apertureSelect = this.settingsDialog.getByLabel(/aperture/i);
+      await apertureSelect.waitFor({ state: 'visible', timeout: 10000 });
       await apertureSelect.click();
 
       await this.page.getByRole('option', { name: data.aperture }).waitFor({ state: 'visible' });
       await this.page.getByRole('option', { name: data.aperture }).click();
     }
 
-    // Configure shutter speed
+    // Configure shutter speed - use label-based selector
     if (data.shutterSpeed) {
-      // Use simpler selector - get the second combobox in the dialog
-      const shutterSpeedSelect = this.settingsDialog.locator('div[role="combobox"]').nth(1);
+      const shutterSpeedSelect = this.page.getByLabel(/shutter speed/i);
       await shutterSpeedSelect.waitFor({ state: 'visible' });
       await shutterSpeedSelect.click();
 

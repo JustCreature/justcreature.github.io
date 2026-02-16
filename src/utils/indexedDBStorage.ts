@@ -4,16 +4,17 @@
  * Maintains same API as localStorage version for seamless migration
  */
 
-import type { FilmRoll, Exposure, Camera, AppSettings } from '../types';
+import type { FilmRoll, Exposure, Camera, Lens, AppSettings } from '../types';
 
 const DB_NAME = 'FilmPhotographyTracker';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // Incremented for lens support
 
 // Object store names
 const STORES = {
     FILM_ROLLS: 'filmRolls',
     EXPOSURES: 'exposures',
     CAMERAS: 'cameras',
+    LENSES: 'lenses',
     SETTINGS: 'settings',
     CURRENT_FILM_ROLL: 'currentFilmRoll'
 } as const;
@@ -46,8 +47,11 @@ class IndexedDBStorage {
 
             request.onupgradeneeded = (event) => {
                 const db = (event.target as IDBOpenDBRequest).result;
+                const oldVersion = event.oldVersion;
 
-                // Create object stores
+                console.log(`Upgrading IndexedDB from version ${oldVersion} to ${DB_VERSION}`);
+
+                // Create object stores (v1)
                 if (!db.objectStoreNames.contains(STORES.FILM_ROLLS)) {
                     const filmRollStore = db.createObjectStore(STORES.FILM_ROLLS, { keyPath: 'id' });
                     filmRollStore.createIndex('createdAt', 'createdAt', { unique: false });
@@ -72,7 +76,14 @@ class IndexedDBStorage {
                     db.createObjectStore(STORES.CURRENT_FILM_ROLL, { keyPath: 'key' });
                 }
 
-                console.log('IndexedDB object stores created');
+                // Add lenses store (v2)
+                if (oldVersion < 2 && !db.objectStoreNames.contains(STORES.LENSES)) {
+                    const lensStore = db.createObjectStore(STORES.LENSES, { keyPath: 'id' });
+                    lensStore.createIndex('createdAt', 'createdAt', { unique: false });
+                    console.log('Created lenses object store');
+                }
+
+                console.log('IndexedDB object stores created/upgraded');
             };
         });
     }
@@ -237,6 +248,23 @@ class IndexedDBStorage {
 
     async deleteCamera(cameraId: string): Promise<void> {
         await this.delete(STORES.CAMERAS, cameraId);
+    }
+
+    // Lenses
+    async saveLens(lens: Lens): Promise<void> {
+        await this.put(STORES.LENSES, lens);
+    }
+
+    async getLenses(): Promise<Lens[]> {
+        const lenses = await this.getAll<Lens>(STORES.LENSES);
+        return lenses.map(lens => ({
+            ...lens,
+            createdAt: new Date(lens.createdAt)
+        }));
+    }
+
+    async deleteLens(lensId: string): Promise<void> {
+        await this.delete(STORES.LENSES, lensId);
     }
 
     // Exposures

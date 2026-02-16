@@ -26,16 +26,14 @@ test.describe('Camera Management', () => {
 
         const specialCamera = {
             make: 'Mamiya',
-            model: 'RZ67 Pro II',
-            lens: 'Sekor-Z 110mm f/2.8 W'
+            model: 'RZ67 Pro II'
         };
 
         await filmTrackerPage.createCamera(specialCamera);
 
         const expectedName = validators.isValidCameraName(
             specialCamera.make,
-            specialCamera.model,
-            specialCamera.lens
+            specialCamera.model
         );
         await expect(filmTrackerPage.page.getByText(expectedName)).toBeVisible();
     });
@@ -50,9 +48,20 @@ test.describe('Camera Management', () => {
 
         const expectedName = validators.isValidCameraName(
             randomCamera.make,
-            randomCamera.model,
-            randomCamera.lens
+            randomCamera.model
         );
         await expect(filmTrackerPage.page.getByText(expectedName)).toBeVisible();
+    });
+
+    test('should verify lenses tab exists', async ({ filmTrackerPage, cleanApp }) => {
+        await expect(filmTrackerPage.lensesTab).toBeVisible();
+
+        // Navigate to lenses tab
+        await filmTrackerPage.lensesTab.click();
+        await expect(filmTrackerPage.lensesTab).toHaveAttribute('aria-selected', 'true');
+
+        // Verify empty state
+        await expect(filmTrackerPage.page.getByText(/no lenses added/i)).toBeVisible();
+        await expect(filmTrackerPage.addLensButton).toBeVisible();
     });
 });

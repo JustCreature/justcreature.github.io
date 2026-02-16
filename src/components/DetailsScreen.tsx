@@ -13,7 +13,10 @@ import {
     DialogTitle,
     DialogContent,
     Select,
-    MenuItem
+    MenuItem,
+    FormControl,
+    InputLabel,
+    Slider
 } from '@mui/material';
 import {
     ArrowBack,
@@ -27,10 +30,11 @@ import {
     Delete
 } from '@mui/icons-material';
 import { camera, fileUtils } from '../utils/camera';
-import { APERTURE, APERTURE_VALUES, SHUTTER_SPEED, SHUTTER_SPEED_VALUES, type Exposure } from '../types';
+import { APERTURE, APERTURE_VALUES, SHUTTER_SPEED, SHUTTER_SPEED_VALUES, EI_VALUES, type Exposure, type Lens } from '../types';
 
 interface DetailsScreenProps {
     exposure: Exposure;
+    lenses: Lens[];
     onExposureUpdate: (exposure: Exposure) => void;
     onExposureDelete?: (exposureId: string) => void;
     onBack: () => void;
@@ -38,6 +42,7 @@ interface DetailsScreenProps {
 
 export const DetailsScreen: React.FC<DetailsScreenProps> = ({
     exposure,
+    lenses,
     onExposureUpdate,
     onExposureDelete,
     onBack
@@ -197,33 +202,119 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
                         <Stack spacing={2}>
                             {isEditing ? (
                                 <>
-                                    <Select
-                                        value={editedExposure.aperture}
-                                        onChange={(e) => setEditedExposure(prev => ({ ...prev, aperture: e.target.value as typeof APERTURE[keyof typeof APERTURE] }))}
-                                        label="Aperture"
-                                    >
-                                        {APERTURE_VALUES.map((value) => (
-                                            <MenuItem key={value} value={value}>
-                                                {value}
+                                    {/* Lens Selection */}
+                                    <FormControl fullWidth>
+                                        <InputLabel>Lens</InputLabel>
+                                        <Select
+                                            value={editedExposure.lensId || ''}
+                                            onChange={(e) => setEditedExposure(prev => ({ ...prev, lensId: e.target.value || undefined }))}
+                                            label="Lens"
+                                        >
+                                            <MenuItem value="">
+                                                <em>None selected</em>
                                             </MenuItem>
-                                        ))}
-                                    </Select>
-                                    <Select
-                                        value={editedExposure.shutterSpeed}
-                                        onChange={(e) => setEditedExposure(prev => ({ ...prev, shutterSpeed: e.target.value as typeof SHUTTER_SPEED[keyof typeof SHUTTER_SPEED] }))}
-                                        label="Shutter Speed"
-                                    >
-                                        {SHUTTER_SPEED_VALUES.map((value) => (
-                                            <MenuItem key={value} value={value}>
-                                                {value}
+                                            {lenses.map((lens) => (
+                                                <MenuItem key={lens.id} value={lens.id}>
+                                                    {lens.name} ({lens.maxAperture})
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+
+                                    {/* Aperture */}
+                                    <FormControl fullWidth>
+                                        <InputLabel>Aperture</InputLabel>
+                                        <Select
+                                            value={editedExposure.aperture}
+                                            onChange={(e) => setEditedExposure(prev => ({ ...prev, aperture: e.target.value as typeof APERTURE[keyof typeof APERTURE] }))}
+                                            label="Aperture"
+                                        >
+                                            {APERTURE_VALUES.map((value) => (
+                                                <MenuItem key={value} value={value}>
+                                                    {value}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+
+                                    {/* Shutter Speed */}
+                                    <FormControl fullWidth>
+                                        <InputLabel>Shutter Speed</InputLabel>
+                                        <Select
+                                            value={editedExposure.shutterSpeed}
+                                            onChange={(e) => setEditedExposure(prev => ({ ...prev, shutterSpeed: e.target.value as typeof SHUTTER_SPEED[keyof typeof SHUTTER_SPEED] }))}
+                                            label="Shutter Speed"
+                                        >
+                                            {SHUTTER_SPEED_VALUES.map((value) => (
+                                                <MenuItem key={value} value={value}>
+                                                    {value}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+
+                                    {/* EI */}
+                                    <FormControl fullWidth>
+                                        <InputLabel>EI (Exposure Index)</InputLabel>
+                                        <Select
+                                            value={editedExposure.ei?.toString() || ''}
+                                            onChange={(e) => setEditedExposure(prev => ({ ...prev, ei: e.target.value ? parseInt(e.target.value) : undefined }))}
+                                            label="EI (Exposure Index)"
+                                        >
+                                            <MenuItem value="">
+                                                <em>Not set</em>
                                             </MenuItem>
-                                        ))}
-                                    </Select>
+                                            {EI_VALUES.map((value) => (
+                                                <MenuItem key={value} value={value.toString()}>
+                                                    {value}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+
+                                    {/* Focal Length */}
+                                    <Box>
+                                        <Typography gutterBottom>
+                                            Focal Length: {editedExposure.focalLength || 'Not set'}mm
+                                        </Typography>
+                                        <Slider
+                                            value={editedExposure.focalLength || 50}
+                                            onChange={(_, value) => setEditedExposure(prev => ({ ...prev, focalLength: value as number }))}
+                                            min={1}
+                                            max={200}
+                                            step={1}
+                                            marks={[
+                                                { value: 1, label: '1mm' },
+                                                { value: 50, label: '50mm' },
+                                                { value: 100, label: '100mm' },
+                                                { value: 200, label: '200mm' }
+                                            ]}
+                                            valueLabelDisplay="auto"
+                                        />
+                                        <TextField
+                                            fullWidth
+                                            label="Manual Focal Length (mm)"
+                                            type="number"
+                                            value={editedExposure.focalLength || ''}
+                                            onChange={(e) => setEditedExposure(prev => ({ ...prev, focalLength: parseInt(e.target.value) || undefined }))}
+                                            inputProps={{ min: 1, max: 10000 }}
+                                            size="small"
+                                            sx={{ mt: 1 }}
+                                        />
+                                    </Box>
                                 </>
                             ) : (
-                                <Stack direction="row" spacing={1}>
+                                <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+                                    {(() => {
+                                        const lens = lenses.find(l => l.id === exposure.lensId);
+                                        return lens && (
+                                            <Chip label={lens.name} color="primary" />
+                                        );
+                                    })()}
                                     <Chip label={exposure.aperture} />
                                     <Chip label={exposure.shutterSpeed} />
+                                    {exposure.ei && <Chip label={`EI ${exposure.ei}`} color="secondary" />}
+                                    {exposure.focalLength && <Chip label={`${exposure.focalLength}mm`} />}
                                 </Stack>
                             )}
                         </Stack>

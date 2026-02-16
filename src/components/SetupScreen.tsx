@@ -12,10 +12,12 @@ import {
     MenuItem
 } from '@mui/material';
 import { PhotoCamera, Settings } from '@mui/icons-material';
-import type { FilmRoll, Camera } from '../types';
+import type { FilmRoll, Camera, Lens } from '../types';
+import { EI_VALUES } from '../types';
 
 interface SetupScreenProps {
     cameras?: Camera[];
+    lenses?: Lens[];
     editingFilmRoll?: FilmRoll | null;
     onFilmRollCreated?: (filmRoll: FilmRoll) => void;
     onFilmRollUpdated?: (filmRoll: FilmRoll) => void;
@@ -23,14 +25,18 @@ interface SetupScreenProps {
 
 export const SetupScreen: React.FC<SetupScreenProps> = ({
     cameras = [],
+    lenses = [],
     editingFilmRoll,
     onFilmRollCreated,
     onFilmRollUpdated
 }) => {
     const [filmName, setFilmName] = useState(editingFilmRoll?.name || '');
     const [iso, setIso] = useState(editingFilmRoll?.iso?.toString() || '400');
+    const [ei, setEi] = useState(editingFilmRoll?.ei?.toString() || '');
+    const [useCustomEi, setUseCustomEi] = useState(false);
     const [totalExposures, setTotalExposures] = useState(editingFilmRoll?.totalExposures?.toString() || '36');
     const [selectedCameraId, setSelectedCameraId] = useState(editingFilmRoll?.cameraId || '');
+    const [selectedLensId, setSelectedLensId] = useState(editingFilmRoll?.currentLensId || '');
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -40,14 +46,18 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
             return;
         }
 
+        const parsedEi = ei ? parseInt(ei) : undefined;
+
         if (editingFilmRoll) {
             // Update existing film roll
             const updatedFilmRoll: FilmRoll = {
                 ...editingFilmRoll,
                 name: filmName.trim(),
                 iso: parseInt(iso) || 400,
+                ei: parsedEi,
                 totalExposures: parseInt(totalExposures) || 36,
-                cameraId: selectedCameraId || undefined
+                cameraId: selectedCameraId || undefined,
+                currentLensId: selectedLensId || undefined
             };
             onFilmRollUpdated?.(updatedFilmRoll);
         } else {
@@ -56,8 +66,10 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
                 id: Date.now().toString(),
                 name: filmName.trim(),
                 iso: parseInt(iso) || 400,
+                ei: parsedEi,
                 totalExposures: parseInt(totalExposures) || 36,
                 cameraId: selectedCameraId || undefined,
+                currentLensId: selectedLensId || undefined,
                 createdAt: new Date()
             };
             onFilmRollCreated?.(filmRoll);
@@ -102,6 +114,51 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
                             required
                         />
 
+                        <Box>
+                            <FormControl fullWidth>
+                                <InputLabel>EI (Exposure Index) - Optional</InputLabel>
+                                <Select
+                                    value={useCustomEi ? 'custom' : ei}
+                                    label="EI (Exposure Index) - Optional"
+                                    onChange={(e) => {
+                                        if (e.target.value === 'custom') {
+                                            setUseCustomEi(true);
+                                            setEi('');
+                                        } else {
+                                            setUseCustomEi(false);
+                                            setEi(e.target.value);
+                                        }
+                                    }}
+                                >
+                                    <MenuItem value="">
+                                        <em>Same as ISO</em>
+                                    </MenuItem>
+                                    {EI_VALUES.map((value) => (
+                                        <MenuItem key={value} value={value.toString()}>
+                                            {value}
+                                        </MenuItem>
+                                    ))}
+                                    <MenuItem value="custom">
+                                        <em>Custom value...</em>
+                                    </MenuItem>
+                                </Select>
+                            </FormControl>
+                            {useCustomEi && (
+                                <TextField
+                                    fullWidth
+                                    label="Custom EI Value"
+                                    type="number"
+                                    value={ei}
+                                    onChange={(e) => setEi(e.target.value)}
+                                    inputProps={{ min: 1, max: 10000 }}
+                                    sx={{ mt: 2 }}
+                                />
+                            )}
+                            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                                EI can differ from ISO when push/pull processing
+                            </Typography>
+                        </Box>
+
                         <TextField
                             fullWidth
                             label="Number of Exposures"
@@ -125,6 +182,24 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
                                 {cameras.map((camera) => (
                                     <MenuItem key={camera.id} value={camera.id}>
                                         {camera.name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+
+                        <FormControl fullWidth>
+                            <InputLabel>Lens (Optional)</InputLabel>
+                            <Select
+                                value={selectedLensId}
+                                label="Lens (Optional)"
+                                onChange={(e) => setSelectedLensId(e.target.value)}
+                            >
+                                <MenuItem value="">
+                                    <em>None selected</em>
+                                </MenuItem>
+                                {lenses.map((lens) => (
+                                    <MenuItem key={lens.id} value={lens.id}>
+                                        {lens.name} ({lens.maxAperture})
                                     </MenuItem>
                                 ))}
                             </Select>

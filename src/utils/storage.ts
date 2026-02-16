@@ -1,4 +1,4 @@
-import type { FilmRoll, Exposure, Camera, AppSettings } from '../types';
+import type { FilmRoll, Exposure, Camera, Lens, AppSettings } from '../types';
 import { indexedDBStorage } from './indexedDBStorage';
 
 // Simple, reliable async storage - no caching, no fallbacks, just IndexedDB
@@ -91,6 +91,38 @@ export const storage = {
         } catch (error) {
             console.error('Failed to delete camera:', error);
             throw new Error('Failed to delete camera. Please try again.');
+        }
+    },
+
+    // Lenses
+    saveLens: async (lens: Lens): Promise<void> => {
+        try {
+            await indexedDBStorage.saveLens(lens);
+            console.log('Lens saved successfully:', lens.name);
+        } catch (error) {
+            console.error('Failed to save lens:', error);
+            throw new Error('Failed to save lens. Please try again.');
+        }
+    },
+
+    getLenses: async (): Promise<Lens[]> => {
+        try {
+            const lenses = await indexedDBStorage.getLenses();
+            console.log(`Retrieved ${lenses.length} lenses from storage`);
+            return lenses;
+        } catch (error) {
+            console.error('Failed to get lenses:', error);
+            return [];
+        }
+    },
+
+    deleteLens: async (lensId: string): Promise<void> => {
+        try {
+            await indexedDBStorage.deleteLens(lensId);
+            console.log('Lens deleted successfully:', lensId);
+        } catch (error) {
+            console.error('Failed to delete lens:', error);
+            throw new Error('Failed to delete lens. Please try again.');
         }
     },
 
