@@ -24,18 +24,39 @@ export const TEST_DATA = {
   cameras: {
     canon: {
       make: 'Canon',
-      model: 'EOS R5',
-      lens: '50mm f/1.8'
+      model: 'EOS R5'
     },
     nikon: {
       make: 'Nikon',
-      model: 'D750',
-      lens: 'Nikkor 85mm f/1.4'
+      model: 'D750'
     },
     vintage: {
       make: 'Zenit',
-      model: 'ET',
-      lens: 'Helios 44-2 f/2'
+      model: 'ET'
+    }
+  },
+  lenses: {
+    primeFast: {
+      name: '50mm f/1.4',
+      maxAperture: 'f/1.4',
+      focalLength: '50'
+    },
+    primeSlow: {
+      name: '50mm f/1.8',
+      maxAperture: 'f/1.8',
+      focalLength: '50'
+    },
+    zoomStandard: {
+      name: '24-70mm f/2.8',
+      maxAperture: 'f/2.8',
+      minFocalLength: '24',
+      maxFocalLength: '70'
+    },
+    telephoto: {
+      name: '70-200mm f/4',
+      maxAperture: 'f/4',
+      minFocalLength: '70',
+      maxFocalLength: '200'
     }
   },
   settings: {
@@ -62,9 +83,20 @@ export const generateTestData = {
 
   camera: () => ({
     make: `Make${Date.now()}`,
-    model: `Model${Date.now()}`,
-    lens: `${Math.floor(Math.random() * 200) + 20}mm f/${(Math.random() * 5 + 1).toFixed(1)}`
+    model: `Model${Date.now()}`
   }),
+
+  lens: () => {
+    const focalLength = Math.floor(Math.random() * 200) + 20;
+    // Use valid aperture values from the app
+    const validApertures = ['f/1.4', 'f/2', 'f/2.8', 'f/3.5', 'f/4', 'f/4.5', 'f/5.6', 'f/8', 'f/11', 'f/16', 'f/22'];
+    const aperture = validApertures[Math.floor(Math.random() * validApertures.length)];
+    return {
+      name: `${focalLength}mm ${aperture}`,
+      maxAperture: aperture,
+      focalLength: String(focalLength)
+    };
+  },
 
   exposure: () => ({
     aperture: TEST_DATA.settings.apertures[Math.floor(Math.random() * TEST_DATA.settings.apertures.length)],

@@ -6,21 +6,6 @@ import { TEST_DATA, generateTestData } from './utils/test-data';
  * Tests the complete photography workflow: film roll → camera settings → capturing photos
  */
 test.describe('Photography Workflow', () => {
-    // Helper function to create a lens with full aperture range
-    async function createTestLens(page: any) {
-        await page.getByRole('tab', { name: /lenses/i }).click();
-        await page.locator('button[aria-label="add lens"]').click();
-
-        await page.getByLabel(/lens name/i).fill('Test Lens 50mm f/1.4');
-        await page.getByLabel(/maximum aperture/i).click();
-        await page.getByRole('option', { name: 'f/1.4' }).click();
-
-        await page.getByRole('button', { name: /add lens/i }).first().click();
-        await page.waitForTimeout(500);
-
-        // Go back to Film Rolls tab
-        await page.getByRole('tab', { name: /film rolls/i }).click();
-    }
 
     test('should navigate through complete photography workflow', async ({ filmTrackerPage, cleanApp }) => {
         // Create film roll
@@ -74,11 +59,11 @@ test.describe('Photography Workflow', () => {
         // Wait for settings dialog to open
         const dialog = filmTrackerPage.page.getByRole('dialog');
         await expect(dialog).toBeVisible();
-        await filmTrackerPage.page.waitForTimeout(1000);
 
         // Click aperture select using positional selector (it's one of the comboboxes in the dialog)
         // Without a lens selected, all apertures should be available
         const apertureCombobox = dialog.locator('div[role="combobox"]').filter({ hasText: /f\// }).first();
+        await expect(apertureCombobox).toBeVisible();
         await apertureCombobox.click();
 
         // Verify some common aperture values are present
@@ -91,6 +76,7 @@ test.describe('Photography Workflow', () => {
 
         // Click shutter speed select
         const shutterSpeedCombobox = dialog.locator('div[role="combobox"]').filter({ hasText: /1\// }).first();
+        await expect(shutterSpeedCombobox).toBeVisible();
         await shutterSpeedCombobox.click();
 
         // Verify some common shutter speeds are present
@@ -105,7 +91,7 @@ test.describe('Photography Workflow', () => {
         await filmTrackerPage.page.getByRole('button', { name: /done/i }).click();
 
         // Wait for dialog to close
-        await dialog.waitFor({ state: 'hidden', timeout: 5000 });
+        await expect(dialog).toBeHidden();
 
         // Verify settings are applied to chips
         await expect(filmTrackerPage.page.locator('.MuiChip-root').getByText('f/8')).toBeVisible();
