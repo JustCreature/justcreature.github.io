@@ -34,6 +34,8 @@ When completing work on a feature or making significant changes:
 3. **Naming convention:** `plan_F-5.md`, `plan_F-6.md`, etc.
 4. **Move to done_** once implemented (renumber if needed)
 
+**IMPORTANT for Claude Code plan mode:** When entering plan mode, ALWAYS write the final plan to `docs/tasks/todo/plan_F-{n}.md` (NOT to `~/.claude/plans/`). This ensures plans are tracked in the repository.
+
 ### Feature Numbering
 - Start from F-1 and increment sequentially
 - Completed features use `done_` prefix
