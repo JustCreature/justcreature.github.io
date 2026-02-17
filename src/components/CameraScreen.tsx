@@ -699,25 +699,30 @@ getUserMedia: ${!!navigator.mediaDevices?.getUserMedia}
                                 const isPrime = selectedLens && selectedLens.focalLength !== undefined;
                                 const isZoom = selectedLens && selectedLens.focalLengthMin !== undefined && selectedLens.focalLengthMax !== undefined;
 
-                                let sliderMin = 1;
-                                let sliderMax = 200;
+                                // Slider always shows full range 1-200mm
+                                const sliderMin = 1;
+                                const sliderMax = 200;
                                 let sliderStep = 1;
                                 let sliderDisabled = false;
                                 let currentValue = currentSettings.focalLength || 50;
+
+                                // Constraints for zoom lens
+                                let zoomMin: number | undefined;
+                                let zoomMax: number | undefined;
 
                                 if (isPrime) {
                                     // Prime lens: set to fixed focal length and disable
                                     currentValue = selectedLens.focalLength!;
                                     sliderDisabled = true;
                                 } else if (isZoom) {
-                                    // Zoom lens: constrain to lens range with step=5
-                                    sliderMin = selectedLens.focalLengthMin!;
-                                    sliderMax = selectedLens.focalLengthMax!;
+                                    // Zoom lens: remember constraints but show full slider
+                                    zoomMin = selectedLens.focalLengthMin!;
+                                    zoomMax = selectedLens.focalLengthMax!;
                                     sliderStep = 5;
 
                                     // Ensure current value is within range and snapped to step
-                                    if (currentValue < sliderMin) currentValue = sliderMin;
-                                    if (currentValue > sliderMax) currentValue = sliderMax;
+                                    if (currentValue < zoomMin) currentValue = zoomMin;
+                                    if (currentValue > zoomMax) currentValue = zoomMax;
                                     // Snap to nearest step
                                     currentValue = Math.round(currentValue / sliderStep) * sliderStep;
                                 }
@@ -728,19 +733,28 @@ getUserMedia: ${!!navigator.mediaDevices?.getUserMedia}
                                         <Typography gutterBottom>
                                             Focal Length: {currentValue || 'Not set'}mm
                                             {isPrime && ' (Prime lens - fixed)'}
-                                            {isZoom && ` (${sliderMin}-${sliderMax}mm zoom)`}
+                                            {isZoom && ` (${zoomMin}-${zoomMax}mm zoom)`}
                                         </Typography>
                                         <Slider
                                             value={currentValue}
-                                            onChange={(_, value) => setCurrentSettings(prev => ({ ...prev, focalLength: value as number }))}
+                                            onChange={(_, value) => {
+                                                let newValue = value as number;
+                                                // Constrain to zoom range if zoom lens
+                                                if (isZoom && zoomMin !== undefined && zoomMax !== undefined) {
+                                                    newValue = Math.max(zoomMin, Math.min(zoomMax, newValue));
+                                                }
+                                                setCurrentSettings(prev => ({ ...prev, focalLength: newValue }));
+                                            }}
                                             min={sliderMin}
                                             max={sliderMax}
                                             step={sliderStep}
                                             marks={[
-                                                { value: sliderMin, label: `${sliderMin}mm` },
-                                                ...(sliderMin < 50 && sliderMax > 50 ? [{ value: 50, label: '50mm' }] : []),
-                                                ...(sliderMin < 100 && sliderMax > 100 ? [{ value: 100, label: '100mm' }] : []),
-                                                { value: sliderMax, label: `${sliderMax}mm` }
+                                                { value: 1, label: '1' },
+                                                { value: 28, label: '28' },
+                                                { value: 50, label: '50' },
+                                                { value: 85, label: '85' },
+                                                { value: 135, label: '135' },
+                                                { value: 200, label: '200' }
                                             ]}
                                             valueLabelDisplay="auto"
                                             disabled={sliderDisabled}
@@ -762,9 +776,9 @@ getUserMedia: ${!!navigator.mediaDevices?.getUserMedia}
                                             value={currentValue || ''}
                                             onChange={(e) => {
                                                 const value = parseInt(e.target.value);
-                                                if (isZoom && value) {
+                                                if (isZoom && value && zoomMin !== undefined && zoomMax !== undefined) {
                                                     // Constrain to zoom range
-                                                    const constrained = Math.max(sliderMin, Math.min(sliderMax, value));
+                                                    const constrained = Math.max(zoomMin, Math.min(zoomMax, value));
                                                     setCurrentSettings(prev => ({ ...prev, focalLength: constrained }));
                                                 } else if (!isPrime) {
                                                     // Allow any value if not a prime lens
@@ -772,8 +786,8 @@ getUserMedia: ${!!navigator.mediaDevices?.getUserMedia}
                                                 }
                                             }}
                                             inputProps={{
-                                                min: isZoom ? sliderMin : 1,
-                                                max: isZoom ? sliderMax : 10000
+                                                min: isZoom && zoomMin ? zoomMin : 1,
+                                                max: isZoom && zoomMax ? zoomMax : 10000
                                             }}
                                             size="small"
                                             sx={{ mt: 1 }}
