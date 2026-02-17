@@ -17,8 +17,7 @@ import {
     Select,
     MenuItem,
     FormControl,
-    InputLabel,
-    Slider
+    InputLabel
 } from '@mui/material';
 import {
     PhotoCamera,
@@ -30,6 +29,7 @@ import {
 import { camera, geolocation, fileUtils } from '../utils/camera';
 import type { FilmRoll, Exposure, ExposureSettings, Lens } from '../types';
 import { APERTURE, APERTURE_VALUES, SHUTTER_SPEED, SHUTTER_SPEED_VALUES, EI_VALUES } from '../types';
+import { FocalLengthSlider } from './FocalLengthSlider';
 
 // Add CSS for shutter effect animation
 const shutterEffectStyles = `
@@ -569,11 +569,23 @@ getUserMedia: ${!!navigator.mediaDevices?.getUserMedia}
                                     const newLensId = e.target.value;
                                     setCurrentSettings(prev => {
                                         const lens = lenses.find(l => l.id === newLensId);
+                                        let newFocalLength = prev.focalLength;
+
+                                        if (lens) {
+                                            if (lens.focalLength !== undefined) {
+                                                // Prime lens: set to fixed focal length
+                                                newFocalLength = lens.focalLength;
+                                            } else if (lens.focalLengthMin !== undefined && lens.focalLengthMax !== undefined) {
+                                                // Zoom lens: set to midpoint
+                                                newFocalLength = Math.round((lens.focalLengthMin + lens.focalLengthMax) / 2 / 5) * 5;
+                                            }
+                                        }
+                                        // If no lens selected, keep current focal length
+
                                         return {
                                             ...prev,
                                             lensId: newLensId || undefined,
-                                            // Set default focal length for prime lenses
-                                            focalLength: lens?.focalLength || prev.focalLength
+                                            focalLength: newFocalLength
                                         };
                                     });
                                 }}
@@ -681,35 +693,12 @@ getUserMedia: ${!!navigator.mediaDevices?.getUserMedia}
                         </Box>
 
                         {/* Focal Length Slider */}
-                        <Box>
-                            <Typography gutterBottom>
-                                Focal Length: {currentSettings.focalLength || 'Not set'}mm
-                            </Typography>
-                            <Slider
-                                value={currentSettings.focalLength || 50}
-                                onChange={(_, value) => setCurrentSettings(prev => ({ ...prev, focalLength: value as number }))}
-                                min={1}
-                                max={200}
-                                step={1}
-                                marks={[
-                                    { value: 1, label: '1mm' },
-                                    { value: 50, label: '50mm' },
-                                    { value: 100, label: '100mm' },
-                                    { value: 200, label: '200mm' }
-                                ]}
-                                valueLabelDisplay="auto"
-                            />
-                            <TextField
-                                fullWidth
-                                label="Manual Focal Length (mm)"
-                                type="number"
-                                value={currentSettings.focalLength || ''}
-                                onChange={(e) => setCurrentSettings(prev => ({ ...prev, focalLength: parseInt(e.target.value) || undefined }))}
-                                inputProps={{ min: 1, max: 10000 }}
-                                size="small"
-                                sx={{ mt: 1 }}
-                            />
-                        </Box>
+                        <FocalLengthSlider
+                            value={currentSettings.focalLength}
+                            onChange={(value) => setCurrentSettings(prev => ({ ...prev, focalLength: value }))}
+                            lenses={lenses}
+                            selectedLensId={currentSettings.lensId}
+                        />
 
                         {/* Additional Info */}
                         <TextField

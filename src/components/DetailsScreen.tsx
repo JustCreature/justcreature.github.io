@@ -15,8 +15,7 @@ import {
     Select,
     MenuItem,
     FormControl,
-    InputLabel,
-    Slider
+    InputLabel
 } from '@mui/material';
 import {
     ArrowBack,
@@ -31,6 +30,7 @@ import {
 } from '@mui/icons-material';
 import { camera, fileUtils } from '../utils/camera';
 import { APERTURE, APERTURE_VALUES, SHUTTER_SPEED, SHUTTER_SPEED_VALUES, EI_VALUES, type Exposure, type Lens } from '../types';
+import { FocalLengthSlider } from './FocalLengthSlider';
 
 interface DetailsScreenProps {
     exposure: Exposure;
@@ -207,7 +207,30 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
                                         <InputLabel>Lens</InputLabel>
                                         <Select
                                             value={editedExposure.lensId || ''}
-                                            onChange={(e) => setEditedExposure(prev => ({ ...prev, lensId: e.target.value || undefined }))}
+                                            onChange={(e) => {
+                                                const newLensId = e.target.value;
+                                                setEditedExposure(prev => {
+                                                    const lens = lenses.find(l => l.id === newLensId);
+                                                    let newFocalLength = prev.focalLength;
+
+                                                    if (lens) {
+                                                        if (lens.focalLength !== undefined) {
+                                                            // Prime lens: set to fixed focal length
+                                                            newFocalLength = lens.focalLength;
+                                                        } else if (lens.focalLengthMin !== undefined && lens.focalLengthMax !== undefined) {
+                                                            // Zoom lens: set to midpoint
+                                                            newFocalLength = Math.round((lens.focalLengthMin + lens.focalLengthMax) / 2 / 5) * 5;
+                                                        }
+                                                    }
+                                                    // If no lens selected, keep current focal length
+
+                                                    return {
+                                                        ...prev,
+                                                        lensId: newLensId || undefined,
+                                                        focalLength: newFocalLength
+                                                    };
+                                                });
+                                            }}
                                             label="Lens"
                                         >
                                             <MenuItem value="">
@@ -273,35 +296,12 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
                                     </FormControl>
 
                                     {/* Focal Length */}
-                                    <Box>
-                                        <Typography gutterBottom>
-                                            Focal Length: {editedExposure.focalLength || 'Not set'}mm
-                                        </Typography>
-                                        <Slider
-                                            value={editedExposure.focalLength || 50}
-                                            onChange={(_, value) => setEditedExposure(prev => ({ ...prev, focalLength: value as number }))}
-                                            min={1}
-                                            max={200}
-                                            step={1}
-                                            marks={[
-                                                { value: 1, label: '1mm' },
-                                                { value: 50, label: '50mm' },
-                                                { value: 100, label: '100mm' },
-                                                { value: 200, label: '200mm' }
-                                            ]}
-                                            valueLabelDisplay="auto"
-                                        />
-                                        <TextField
-                                            fullWidth
-                                            label="Manual Focal Length (mm)"
-                                            type="number"
-                                            value={editedExposure.focalLength || ''}
-                                            onChange={(e) => setEditedExposure(prev => ({ ...prev, focalLength: parseInt(e.target.value) || undefined }))}
-                                            inputProps={{ min: 1, max: 10000 }}
-                                            size="small"
-                                            sx={{ mt: 1 }}
-                                        />
-                                    </Box>
+                                    <FocalLengthSlider
+                                        value={editedExposure.focalLength}
+                                        onChange={(value) => setEditedExposure(prev => ({ ...prev, focalLength: value }))}
+                                        lenses={lenses}
+                                        selectedLensId={editedExposure.lensId}
+                                    />
                                 </>
                             ) : (
                                 <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
