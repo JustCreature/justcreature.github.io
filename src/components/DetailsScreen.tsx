@@ -207,7 +207,30 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
                                         <InputLabel>Lens</InputLabel>
                                         <Select
                                             value={editedExposure.lensId || ''}
-                                            onChange={(e) => setEditedExposure(prev => ({ ...prev, lensId: e.target.value || undefined }))}
+                                            onChange={(e) => {
+                                                const newLensId = e.target.value;
+                                                setEditedExposure(prev => {
+                                                    const lens = lenses.find(l => l.id === newLensId);
+                                                    let newFocalLength = prev.focalLength;
+
+                                                    if (lens) {
+                                                        if (lens.focalLength !== undefined) {
+                                                            // Prime lens: set to fixed focal length
+                                                            newFocalLength = lens.focalLength;
+                                                        } else if (lens.focalLengthMin !== undefined && lens.focalLengthMax !== undefined) {
+                                                            // Zoom lens: set to midpoint
+                                                            newFocalLength = Math.round((lens.focalLengthMin + lens.focalLengthMax) / 2 / 5) * 5;
+                                                        }
+                                                    }
+                                                    // If no lens selected, keep current focal length
+
+                                                    return {
+                                                        ...prev,
+                                                        lensId: newLensId || undefined,
+                                                        focalLength: newFocalLength
+                                                    };
+                                                });
+                                            }}
                                             label="Lens"
                                         >
                                             <MenuItem value="">
@@ -274,33 +297,94 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
 
                                     {/* Focal Length */}
                                     <Box>
-                                        <Typography gutterBottom>
-                                            Focal Length: {editedExposure.focalLength || 'Not set'}mm
-                                        </Typography>
-                                        <Slider
-                                            value={editedExposure.focalLength || 50}
-                                            onChange={(_, value) => setEditedExposure(prev => ({ ...prev, focalLength: value as number }))}
-                                            min={1}
-                                            max={200}
-                                            step={1}
-                                            marks={[
-                                                { value: 1, label: '1mm' },
-                                                { value: 50, label: '50mm' },
-                                                { value: 100, label: '100mm' },
-                                                { value: 200, label: '200mm' }
-                                            ]}
-                                            valueLabelDisplay="auto"
-                                        />
-                                        <TextField
-                                            fullWidth
-                                            label="Manual Focal Length (mm)"
-                                            type="number"
-                                            value={editedExposure.focalLength || ''}
-                                            onChange={(e) => setEditedExposure(prev => ({ ...prev, focalLength: parseInt(e.target.value) || undefined }))}
-                                            inputProps={{ min: 1, max: 10000 }}
-                                            size="small"
-                                            sx={{ mt: 1 }}
-                                        />
+                                        {(() => {
+                                            const selectedLens = lenses.find(l => l.id === editedExposure.lensId);
+                                            const isPrime = selectedLens && selectedLens.focalLength !== undefined;
+                                            const isZoom = selectedLens && selectedLens.focalLengthMin !== undefined && selectedLens.focalLengthMax !== undefined;
+
+                                            let sliderMin = 1;
+                                            let sliderMax = 200;
+                                            let sliderStep = 1;
+                                            let sliderDisabled = false;
+                                            let currentValue = editedExposure.focalLength || 50;
+
+                                            if (isPrime) {
+                                                // Prime lens: set to fixed focal length and disable
+                                                currentValue = selectedLens.focalLength!;
+                                                sliderDisabled = true;
+                                            } else if (isZoom) {
+                                                // Zoom lens: constrain to lens range with step=5
+                                                sliderMin = selectedLens.focalLengthMin!;
+                                                sliderMax = selectedLens.focalLengthMax!;
+                                                sliderStep = 5;
+
+                                                // Ensure current value is within range and snapped to step
+                                                if (currentValue < sliderMin) currentValue = sliderMin;
+                                                if (currentValue > sliderMax) currentValue = sliderMax;
+                                                // Snap to nearest step
+                                                currentValue = Math.round(currentValue / sliderStep) * sliderStep;
+                                            }
+                                            // No lens selected: use default values (already set above)
+
+                                            return (
+                                                <>
+                                                    <Typography gutterBottom>
+                                                        Focal Length: {currentValue || 'Not set'}mm
+                                                        {isPrime && ' (Prime lens - fixed)'}
+                                                        {isZoom && ` (${sliderMin}-${sliderMax}mm zoom)`}
+                                                    </Typography>
+                                                    <Slider
+                                                        value={currentValue}
+                                                        onChange={(_, value) => setEditedExposure(prev => ({ ...prev, focalLength: value as number }))}
+                                                        min={sliderMin}
+                                                        max={sliderMax}
+                                                        step={sliderStep}
+                                                        marks={[
+                                                            { value: sliderMin, label: `${sliderMin}mm` },
+                                                            ...(sliderMin < 50 && sliderMax > 50 ? [{ value: 50, label: '50mm' }] : []),
+                                                            ...(sliderMin < 100 && sliderMax > 100 ? [{ value: 100, label: '100mm' }] : []),
+                                                            { value: sliderMax, label: `${sliderMax}mm` }
+                                                        ]}
+                                                        valueLabelDisplay="auto"
+                                                        disabled={sliderDisabled}
+                                                        sx={{
+                                                            ...(sliderDisabled && {
+                                                                '& .MuiSlider-thumb': {
+                                                                    backgroundColor: 'grey.500'
+                                                                },
+                                                                '& .MuiSlider-track': {
+                                                                    backgroundColor: 'grey.500'
+                                                                }
+                                                            })
+                                                        }}
+                                                    />
+                                                    <TextField
+                                                        fullWidth
+                                                        label="Manual Focal Length (mm)"
+                                                        type="number"
+                                                        value={currentValue || ''}
+                                                        onChange={(e) => {
+                                                            const value = parseInt(e.target.value);
+                                                            if (isZoom && value) {
+                                                                // Constrain to zoom range
+                                                                const constrained = Math.max(sliderMin, Math.min(sliderMax, value));
+                                                                setEditedExposure(prev => ({ ...prev, focalLength: constrained }));
+                                                            } else if (!isPrime) {
+                                                                // Allow any value if not a prime lens
+                                                                setEditedExposure(prev => ({ ...prev, focalLength: value || undefined }));
+                                                            }
+                                                        }}
+                                                        inputProps={{
+                                                            min: isZoom ? sliderMin : 1,
+                                                            max: isZoom ? sliderMax : 10000
+                                                        }}
+                                                        size="small"
+                                                        sx={{ mt: 1 }}
+                                                        disabled={isPrime}
+                                                    />
+                                                </>
+                                            );
+                                        })()}
                                     </Box>
                                 </>
                             ) : (

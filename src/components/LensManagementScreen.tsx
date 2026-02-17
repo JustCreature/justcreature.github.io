@@ -15,7 +15,8 @@ import {
     Stack,
     IconButton,
     Menu,
-    MenuItem
+    MenuItem,
+    Alert
 } from '@mui/material';
 import {
     Add,
@@ -54,6 +55,8 @@ export const LensManagementScreen: React.FC<LensManagementScreenProps> = ({
         focalLengthMax: ''
     });
 
+    const [validationError, setValidationError] = useState<string | null>(null);
+
     const resetForm = () => {
         setFormData({
             name: '',
@@ -63,12 +66,43 @@ export const LensManagementScreen: React.FC<LensManagementScreenProps> = ({
             focalLengthMax: ''
         });
         setEditingLens(null);
+        setValidationError(null);
     };
 
     const handleCreate = () => {
+        setValidationError(null);
+
         if (!formData.name.trim()) {
-            alert('Please enter lens name');
+            setValidationError('Please enter lens name');
             return;
+        }
+
+        // Validation: Can't have both prime and zoom
+        const hasPrime = !!formData.focalLength;
+        const hasZoom = !!(formData.focalLengthMin || formData.focalLengthMax);
+
+        if (hasPrime && hasZoom) {
+            setValidationError('A lens cannot be both prime and zoom. Please enter either Focal Length (prime) OR Min/Max Focal Length (zoom)');
+            return;
+        }
+
+        if (!hasPrime && !hasZoom) {
+            setValidationError('Please enter focal length information for either prime or zoom lens');
+            return;
+        }
+
+        // Validate zoom range
+        if (hasZoom) {
+            const min = parseInt(formData.focalLengthMin);
+            const max = parseInt(formData.focalLengthMax);
+            if (!formData.focalLengthMin || !formData.focalLengthMax) {
+                setValidationError('For zoom lenses, both Min and Max focal lengths are required');
+                return;
+            }
+            if (min >= max) {
+                setValidationError('Min focal length must be less than Max focal length');
+                return;
+            }
         }
 
         const lens: Lens = {
@@ -87,9 +121,39 @@ export const LensManagementScreen: React.FC<LensManagementScreenProps> = ({
     };
 
     const handleUpdate = () => {
+        setValidationError(null);
+
         if (!editingLens || !formData.name.trim()) {
-            alert('Please enter lens name');
+            setValidationError('Please enter lens name');
             return;
+        }
+
+        // Validation: Can't have both prime and zoom
+        const hasPrime = !!formData.focalLength;
+        const hasZoom = !!(formData.focalLengthMin || formData.focalLengthMax);
+
+        if (hasPrime && hasZoom) {
+            setValidationError('A lens cannot be both prime and zoom. Please enter either Focal Length (prime) OR Min/Max Focal Length (zoom)');
+            return;
+        }
+
+        if (!hasPrime && !hasZoom) {
+            setValidationError('Please enter focal length information for either prime or zoom lens');
+            return;
+        }
+
+        // Validate zoom range
+        if (hasZoom) {
+            const min = parseInt(formData.focalLengthMin);
+            const max = parseInt(formData.focalLengthMax);
+            if (!formData.focalLengthMin || !formData.focalLengthMax) {
+                setValidationError('For zoom lenses, both Min and Max focal lengths are required');
+                return;
+            }
+            if (min >= max) {
+                setValidationError('Min focal length must be less than Max focal length');
+                return;
+            }
         }
 
         const updatedLens: Lens = {
@@ -273,6 +337,12 @@ export const LensManagementScreen: React.FC<LensManagementScreenProps> = ({
                 </DialogTitle>
                 <DialogContent>
                     <Stack spacing={3} sx={{ pt: 1 }}>
+                        {validationError && (
+                            <Alert severity="error" onClose={() => setValidationError(null)}>
+                                {validationError}
+                            </Alert>
+                        )}
+
                         <TextField
                             fullWidth
                             label="Lens Name"
@@ -297,7 +367,7 @@ export const LensManagementScreen: React.FC<LensManagementScreenProps> = ({
                             ))}
                         </TextField>
 
-                        <Typography variant="subtitle2" color="text.secondary">
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>
                             Focal Length (for prime lenses)
                         </Typography>
                         <TextField
@@ -305,13 +375,25 @@ export const LensManagementScreen: React.FC<LensManagementScreenProps> = ({
                             label="Focal Length (mm)"
                             type="number"
                             value={formData.focalLength}
-                            onChange={(e) => setFormData(prev => ({ ...prev, focalLength: e.target.value }))}
+                            onChange={(e) => setFormData(prev => ({
+                                ...prev,
+                                focalLength: e.target.value,
+                                // Clear zoom values when entering prime focal length
+                                focalLengthMin: e.target.value ? '' : prev.focalLengthMin,
+                                focalLengthMax: e.target.value ? '' : prev.focalLengthMax
+                            }))}
                             placeholder="e.g., 50"
                             inputProps={{ min: 1, max: 10000 }}
+                            disabled={!!(formData.focalLengthMin || formData.focalLengthMax)}
+                            helperText={
+                                (formData.focalLengthMin || formData.focalLengthMax)
+                                    ? "Clear zoom values to enter prime focal length"
+                                    : "For fixed focal length lenses"
+                            }
                         />
 
-                        <Typography variant="subtitle2" color="text.secondary">
-                            Or for zoom lenses
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 2 }}>
+                            OR for zoom lenses
                         </Typography>
                         <Box display="flex" gap={2}>
                             <TextField
@@ -319,20 +401,37 @@ export const LensManagementScreen: React.FC<LensManagementScreenProps> = ({
                                 label="Min Focal Length (mm)"
                                 type="number"
                                 value={formData.focalLengthMin}
-                                onChange={(e) => setFormData(prev => ({ ...prev, focalLengthMin: e.target.value }))}
+                                onChange={(e) => setFormData(prev => ({
+                                    ...prev,
+                                    focalLengthMin: e.target.value,
+                                    // Clear prime value when entering zoom values
+                                    focalLength: (e.target.value || prev.focalLengthMax) ? '' : prev.focalLength
+                                }))}
                                 placeholder="e.g., 24"
                                 inputProps={{ min: 1, max: 10000 }}
+                                disabled={!!formData.focalLength}
                             />
                             <TextField
                                 fullWidth
                                 label="Max Focal Length (mm)"
                                 type="number"
                                 value={formData.focalLengthMax}
-                                onChange={(e) => setFormData(prev => ({ ...prev, focalLengthMax: e.target.value }))}
+                                onChange={(e) => setFormData(prev => ({
+                                    ...prev,
+                                    focalLengthMax: e.target.value,
+                                    // Clear prime value when entering zoom values
+                                    focalLength: (e.target.value || prev.focalLengthMin) ? '' : prev.focalLength
+                                }))}
                                 placeholder="e.g., 70"
                                 inputProps={{ min: 1, max: 10000 }}
+                                disabled={!!formData.focalLength}
                             />
                         </Box>
+                        {formData.focalLength && (
+                            <Typography variant="caption" color="text.secondary">
+                                Clear prime focal length to enter zoom range
+                            </Typography>
+                        )}
                     </Stack>
                 </DialogContent>
                 <DialogActions>
