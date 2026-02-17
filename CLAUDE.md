@@ -6,6 +6,39 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Film Photography Tracker is a Progressive Web App (PWA) for tracking film photography metadata. Built with React 18, TypeScript, Vite, and Material-UI, it helps photographers record and organize shots with exposure details, location data, and camera information.
 
+## Feature Documentation Process
+
+When completing work on a feature or making significant changes:
+
+### Completed Features
+1. **Document the feature** in `docs/features/done_F-{n}.md` where `n` is the next sequential number
+2. **Include in the documentation:**
+   - Feature overview and key components
+   - Technical details (files changed, new APIs, data models)
+   - User benefits and use cases
+   - Testing coverage
+   - Commits included
+   - Migration notes (if applicable)
+   - Future enhancement ideas
+3. **Naming convention:** `done_F-1.md`, `done_F-2.md`, etc.
+4. **Delete task plans** from `docs/tasks/todo/` once implemented
+
+### Planned Features
+1. **Create plan** in `docs/tasks/todo/plan_F-{n}.md` for future features
+2. **Include in the plan:**
+   - Problem statement
+   - Proposed solution
+   - Implementation steps
+   - Benefits and trade-offs
+   - Effort estimate
+3. **Naming convention:** `plan_F-5.md`, `plan_F-6.md`, etc.
+4. **Move to done_** once implemented (renumber if needed)
+
+### Feature Numbering
+- Start from F-1 and increment sequentially
+- Completed features use `done_` prefix
+- Planned features use `plan_` prefix
+
 ## Key Commands
 
 ### Development
