@@ -87,7 +87,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
 
     const handleImageChange = async (file: File) => {
         try {
-            const imageData = await fileUtils.fileToBase64(file);
+            const imageData = await fileUtils.scaleImageFile(file);
             setEditedExposure(prev => ({ ...prev, imageData }));
         } catch (error) {
             console.error('Error processing image:', error);

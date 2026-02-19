@@ -274,7 +274,7 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
                 return;
             }
 
-            const imageData = await fileUtils.fileToBase64(file);
+            const imageData = await fileUtils.scaleImageFile(file);
 
             if (!imageData || imageData.length < 100) {
                 throw new Error('Invalid image data generated');
