@@ -2,6 +2,8 @@
 
 Documentation for AI assistants working on this project.
 
+**Key principle:** Keep all .md files concise (~100-300 lines). Essential info only.
+
 ## Structure
 
 - **procedure/** - Reusable workflows
@@ -18,3 +20,10 @@ Two separate workflows that never mix:
 - Numbers stay forever (F-6 never becomes F-5 or ISSUE-42)
 - Gaps in numbering expected
 - ISSUE-n imported via `procedure{source_github}` (label: `ready_for_dev`)
+
+## Documentation Style
+
+- **Concise:** Essential info only, no fluff
+- **Scannable:** Headers, bullets, code blocks
+- **Actionable:** What changed, where, why
+- **No duplication:** Don't repeat what's in code/commits
