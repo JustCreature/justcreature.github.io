@@ -127,6 +127,10 @@ export class FilmTrackerPage {
     return this.page.getByRole('button', { name: /view gallery/i });
   }
 
+  get addFromGalleryButton() {
+    return this.page.getByRole('button', { name: /add from gallery/i });
+  }
+
   get apertureChip() {
     return this.page.locator('.MuiChip-root').filter({ hasText: /f\// }).first();
   }
