@@ -18,6 +18,7 @@ import type { FilmRoll, Exposure, Camera, Lens } from '../types';
 import { FilmRollListScreen } from './FilmRollListScreen';
 import { CameraManagementScreen } from './CameraManagementScreen';
 import { LensManagementScreen } from './LensManagementScreen';
+import { colors } from '../theme';
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -80,17 +81,55 @@ export const MainScreen: React.FC<MainScreenProps> = ({
     };
 
     return (
-        <Box sx={{ flexGrow: 1, bgcolor: 'background.default', minHeight: '100vh' }}>
-            <AppBar position="static" elevation={1}>
-                <Toolbar>
-                    <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                        Film Photography Tracker
-                    </Typography>
+        <Box
+            sx={{
+                flexGrow: 1,
+                bgcolor: colors.warmWhite,
+                minHeight: '100vh',
+                backgroundImage: `
+                    radial-gradient(circle at 20% 50%, rgba(217, 119, 6, 0.02) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 80%, rgba(217, 119, 6, 0.02) 0%, transparent 50%)
+                `,
+            }}
+        >
+            <AppBar
+                position="static"
+                sx={{
+                    bgcolor: colors.charcoal,
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                }}
+            >
+                <Toolbar sx={{ py: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
+                        <PhotoLibrary
+                            sx={{
+                                mr: 1.5,
+                                fontSize: 28,
+                                color: colors.deepAmber,
+                            }}
+                        />
+                        <Typography
+                            variant="h5"
+                            component="div"
+                            sx={{
+                                fontWeight: 600,
+                                letterSpacing: '-0.01em',
+                                color: 'white',
+                            }}
+                        >
+                            Film Photography Tracker
+                        </Typography>
+                    </Box>
                     {onSettingsClick && (
                         <IconButton
                             color="inherit"
                             onClick={onSettingsClick}
                             aria-label="settings"
+                            sx={{
+                                '&:hover': {
+                                    bgcolor: 'rgba(255, 255, 255, 0.1)',
+                                }
+                            }}
                         >
                             <Settings />
                         </IconButton>
@@ -100,13 +139,31 @@ export const MainScreen: React.FC<MainScreenProps> = ({
                     value={currentTab}
                     onChange={handleTabChange}
                     sx={{
-                        bgcolor: 'primary.dark',
+                        bgcolor: colors.seleniumGray,
+                        borderTop: `1px solid rgba(255, 255, 255, 0.1)`,
                         '& .MuiTab-root': {
-                            color: 'rgba(255, 255, 255, 0.7)',
-                            '&.Mui-selected': { color: 'white' }
+                            color: 'rgba(255, 255, 255, 0.6)',
+                            fontSize: '0.9375rem',
+                            fontWeight: 600,
+                            minHeight: 56,
+                            textTransform: 'none',
+                            transition: 'all 200ms ease-out',
+                            '&:hover': {
+                                color: 'rgba(255, 255, 255, 0.9)',
+                                bgcolor: 'rgba(255, 255, 255, 0.05)',
+                            },
+                            '&.Mui-selected': {
+                                color: colors.deepAmber,
+                            },
+                            '& .MuiSvgIcon-root': {
+                                fontSize: '1.3rem',
+                            }
                         },
                         '& .MuiTabs-indicator': {
-                            backgroundColor: 'white'
+                            height: 3,
+                            borderRadius: '3px 3px 0 0',
+                            backgroundColor: colors.deepAmber,
+                            boxShadow: `0 -2px 8px rgba(217, 119, 6, 0.4)`,
                         }
                     }}
                 >
@@ -114,19 +171,16 @@ export const MainScreen: React.FC<MainScreenProps> = ({
                         icon={<PhotoLibrary />}
                         label="Film Rolls"
                         iconPosition="start"
-                        sx={{ minHeight: 48 }}
                     />
                     <Tab
                         icon={<CameraAlt />}
                         label="Cameras"
                         iconPosition="start"
-                        sx={{ minHeight: 48 }}
                     />
                     <Tab
                         icon={<CameraEnhance />}
                         label="Lenses"
                         iconPosition="start"
-                        sx={{ minHeight: 48 }}
                     />
                 </Tabs>
             </AppBar>

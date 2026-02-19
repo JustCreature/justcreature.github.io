@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Snackbar, Alert, Button } from '@mui/material';
-import '@fontsource/roboto/300.css';
-import '@fontsource/roboto/400.css';
-import '@fontsource/roboto/500.css';
-import '@fontsource/roboto/700.css';
+import '@fontsource/inter/300.css';
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/500.css';
+import '@fontsource/inter/600.css';
+import '@fontsource/inter/700.css';
 
 import { MainScreen } from './components/MainScreen';
 import { SetupScreen } from './components/SetupScreen';
@@ -17,20 +18,7 @@ import { storage } from './utils/storage';
 // import { SyncManager } from './utils/syncManager'; // Temporarily disabled
 import type { FilmRoll, Exposure, AppState, Camera, Lens, AppSettings, ExposureSettings } from './types';
 import { SHUTTER_SPEED, APERTURE } from './types';
-
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-  },
-  typography: {
-    fontFamily: 'Roboto, Arial, sans-serif',
-  },
-});
+import { filmTheme } from './theme';
 
 function App() {
   const [exposureSettings, setExposureSettings] = useState<ExposureSettings>({
@@ -508,7 +496,7 @@ function App() {
   };
 
   return (
-    <ThemeProvider theme={theme}>
+    <ThemeProvider theme={filmTheme}>
       <CssBaseline />
       {renderCurrentScreen()}
 

@@ -39,6 +39,7 @@ import {
 import type { Exposure, FilmRoll, Lens } from '../types';
 import { exportUtils, googleDriveUtils } from '../utils/exportImport';
 import { storage } from '../utils/storage';
+import { colors } from '../theme';
 
 interface GalleryScreenProps {
     filmRoll: FilmRoll;
@@ -254,18 +255,43 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
     }
 
     return (
-        <Container maxWidth="sm" sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-            {/* Header */}
-            <Box display="flex" alignItems="center" py={2}>
-                <IconButton onClick={onBack} sx={{ mr: 1 }}>
+        <Container maxWidth="sm" sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: colors.warmWhite }}>
+            {/* Header - Film Contact Sheet Style */}
+            <Box display="flex" alignItems="center" py={2} borderBottom={`2px solid ${colors.coolGray}`}>
+                <IconButton
+                    onClick={onBack}
+                    sx={{
+                        mr: 1,
+                        '&:hover': { bgcolor: 'rgba(217, 119, 6, 0.08)' },
+                    }}
+                >
                     <ArrowBack />
                 </IconButton>
                 <Box>
-                    <Typography variant="h6" fontWeight="bold">
+                    <Typography
+                        variant="h6"
+                        sx={{
+                            fontWeight: 600,
+                            color: colors.charcoal,
+                            mb: 0.25,
+                        }}
+                    >
                         {filmRoll.name}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                        ISO {filmRoll.iso} • {filmExposures.length}/{filmRoll.totalExposures} exposures
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            color: colors.silverGray,
+                            fontVariantNumeric: 'tabular-nums',
+                            fontSize: '0.8125rem',
+                        }}
+                    >
+                        ISO {filmRoll.iso}
+                        <Box component="span" sx={{ mx: 1, color: colors.coolGray }}>•</Box>
+                        <Box component="span" sx={{ fontWeight: 500 }}>
+                            {filmExposures.length}/{filmRoll.totalExposures}
+                        </Box>
+                        {' '}exposures
                     </Typography>
                 </Box>
             </Box>
@@ -318,11 +344,34 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
                                 onClick={() => onExposureSelect(exposure)}
                                 sx={{
                                     cursor: 'pointer',
-                                    '&:hover': {
-                                        transform: 'translateY(-2px)',
-                                        boxShadow: 3
+                                    position: 'relative',
+                                    border: `2px solid ${colors.seleniumGray}`,
+                                    borderRadius: 1,
+                                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)',
+                                    transition: 'all 0.2s ease-out',
+                                    // Film strip perforations on left edge
+                                    '&::before': {
+                                        content: '""',
+                                        position: 'absolute',
+                                        left: 0,
+                                        top: 0,
+                                        bottom: 0,
+                                        width: '6px',
+                                        background: `repeating-linear-gradient(
+                                            to bottom,
+                                            transparent 0px,
+                                            transparent 6px,
+                                            ${colors.coolGray} 6px,
+                                            ${colors.coolGray} 10px
+                                        )`,
+                                        zIndex: 1,
                                     },
-                                    transition: 'all 0.2s ease-in-out'
+                                    paddingLeft: '8px',
+                                    '&:hover': {
+                                        transform: 'translateY(-4px)',
+                                        boxShadow: `0 4px 12px rgba(0, 0, 0, 0.15), 0 0 0 2px ${colors.deepAmber}`,
+                                        borderColor: colors.deepAmber,
+                                    },
                                 }}
                             >
                                 <Box display="flex">
@@ -336,7 +385,15 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
                                     )}
                                     <CardContent sx={{ flex: 1, p: 2 }}>
                                         <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
-                                            <Typography variant="h6" fontWeight="bold">
+                                            <Typography
+                                                variant="h6"
+                                                sx={{
+                                                    fontWeight: 700,
+                                                    color: colors.charcoal,
+                                                    fontVariantNumeric: 'tabular-nums',
+                                                    fontSize: '1.125rem',
+                                                }}
+                                            >
                                                 #{exposure.exposureNumber}
                                             </Typography>
                                             <Box display="flex" alignItems="center" gap={1}>
@@ -367,33 +424,65 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
                                                 <Chip
                                                     label={lens.name}
                                                     size="small"
-                                                    variant="outlined"
-                                                    color="primary"
+                                                    variant="filled"
+                                                    sx={{
+                                                        bgcolor: colors.deepAmber,
+                                                        color: 'white',
+                                                        fontWeight: 600,
+                                                        fontSize: '0.75rem',
+                                                    }}
                                                 />
                                             )}
                                             <Chip
                                                 label={exposure.aperture}
                                                 size="small"
-                                                variant="outlined"
+                                                variant="filled"
+                                                sx={{
+                                                    bgcolor: colors.coolGray,
+                                                    color: colors.charcoal,
+                                                    fontVariantNumeric: 'tabular-nums',
+                                                    fontWeight: 600,
+                                                    fontSize: '0.75rem',
+                                                }}
                                             />
                                             <Chip
                                                 label={exposure.shutterSpeed}
                                                 size="small"
-                                                variant="outlined"
+                                                variant="filled"
+                                                sx={{
+                                                    bgcolor: colors.coolGray,
+                                                    color: colors.charcoal,
+                                                    fontVariantNumeric: 'tabular-nums',
+                                                    fontWeight: 600,
+                                                    fontSize: '0.75rem',
+                                                }}
                                             />
                                             {exposure.ei && (
                                                 <Chip
                                                     label={`EI ${exposure.ei}`}
                                                     size="small"
-                                                    variant="outlined"
-                                                    color="secondary"
+                                                    variant="filled"
+                                                    sx={{
+                                                        bgcolor: colors.seleniumGray,
+                                                        color: 'white',
+                                                        fontVariantNumeric: 'tabular-nums',
+                                                        fontWeight: 600,
+                                                        fontSize: '0.75rem',
+                                                    }}
                                                 />
                                             )}
                                             {exposure.focalLength && (
                                                 <Chip
                                                     label={`${exposure.focalLength}mm`}
                                                     size="small"
-                                                    variant="outlined"
+                                                    variant="filled"
+                                                    sx={{
+                                                        bgcolor: colors.coolGray,
+                                                        color: colors.charcoal,
+                                                        fontVariantNumeric: 'tabular-nums',
+                                                        fontWeight: 600,
+                                                        fontSize: '0.75rem',
+                                                    }}
                                                 />
                                             )}
                                         </Stack>
