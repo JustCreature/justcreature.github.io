@@ -26,7 +26,7 @@ import {
     Close,
     ArrowBack
 } from '@mui/icons-material';
-import { camera, geolocation, fileUtils } from '../utils/camera';
+import { camera, geolocation } from '../utils/camera';
 import type { FilmRoll, Exposure, ExposureSettings, Lens } from '../types';
 import { APERTURE, APERTURE_VALUES, SHUTTER_SPEED, SHUTTER_SPEED_VALUES, EI_VALUES } from '../types';
 import { FocalLengthSlider } from './FocalLengthSlider';
@@ -73,7 +73,6 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
     setCurrentSettings
 }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
 
     const [isCameraActive, setIsCameraActive] = useState(false);
@@ -246,76 +245,6 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
         }
     };
 
-    const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-
-        // Clear the input immediately to allow reselection of the same file
-        const target = event.target;
-        setTimeout(() => {
-            target.value = '';
-        }, 100);
-
-        if (!file) {
-            console.log('No file selected');
-            return;
-        }
-
-        console.log('Processing file:', file.name, 'Size:', file.size, 'Type:', file.type);
-
-        try {
-            // Validate file before processing
-            if (!file.type.startsWith('image/')) {
-                alert('Please select an image file');
-                return;
-            }
-
-            if (file.size > 10 * 1024 * 1024) { // 10MB limit
-                alert('Image too large. Please select a smaller image.');
-                return;
-            }
-
-            const imageData = await fileUtils.fileToBase64(file);
-
-            if (!imageData || imageData.length < 100) {
-                throw new Error('Invalid image data generated');
-            }
-
-            console.log('Image processed successfully, size:', imageData.length);
-
-            const location = geolocation.isSupported()
-                ? await geolocation.getCurrentPosition().catch((err) => {
-                    console.warn('Location not available:', err);
-                    return undefined;
-                })
-                : undefined;
-
-            const exposure: Exposure = {
-                id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // More unique ID
-                filmRollId: filmRoll.id,
-                exposureNumber: currentExposureNumber,
-                aperture: currentSettings.aperture,
-                shutterSpeed: currentSettings.shutterSpeed,
-                additionalInfo: currentSettings.additionalInfo,
-                imageData,
-                location,
-                capturedAt: new Date(),
-                ei: currentSettings.ei,
-                lensId: currentSettings.lensId,
-                focalLength: currentSettings.focalLength
-            };
-
-            console.log('Creating exposure:', exposure.id);
-            onExposureTaken(exposure);
-
-            // Reset additional info for next shot
-            setCurrentSettings(prev => ({ ...prev, additionalInfo: '' }));
-
-        } catch (error) {
-            console.error('Error processing file:', error);
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-            alert(`Error processing selected image: ${errorMessage}`);
-        }
-    };
 
     const openSettingsDialog = () => {
         setShowSettingsDialog(true);
@@ -632,14 +561,6 @@ getUserMedia: ${!!navigator.mediaDevices?.getUserMedia}
 
             {/* Controls */}
             <Stack direction="row" spacing={2} alignItems="center" justifyContent="center">
-                <Button
-                    variant="outlined"
-                    onClick={() => fileInputRef.current?.click()}
-                    startIcon={<PhotoLibrary />}
-                >
-                    Gallery
-                </Button>
-
                 <Fab
                     color="primary"
                     size="large"
@@ -684,15 +605,6 @@ getUserMedia: ${!!navigator.mediaDevices?.getUserMedia}
                     {isCameraActive ? 'Stop' : 'Camera'}
                 </Button>
             </Stack>
-
-            {/* Hidden file input */}
-            <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                style={{ display: 'none' }}
-                onChange={handleFileSelect}
-            />
 
             {/* Settings Dialog */}
             <Dialog open={showSettingsDialog} onClose={() => setShowSettingsDialog(false)} maxWidth="sm" fullWidth>

@@ -182,6 +182,88 @@ export const geolocation = {
 };
 
 export const fileUtils = {
+    // Scale and compress image file (for gallery uploads)
+    scaleImageFile: (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            // Validate file first
+            if (!file || !(file instanceof File)) {
+                reject(new Error('Invalid file provided'));
+                return;
+            }
+
+            // Check file size (limit to 10MB for mobile compatibility)
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            if (file.size > maxSize) {
+                reject(new Error('File too large. Please select a smaller image.'));
+                return;
+            }
+
+            // Check file type
+            if (!file.type.startsWith('image/')) {
+                reject(new Error('Please select an image file.'));
+                return;
+            }
+
+            // Create image element to load file
+            const img = new Image();
+            const url = URL.createObjectURL(file);
+
+            img.onload = () => {
+                try {
+                    URL.revokeObjectURL(url); // Clean up
+
+                    // Same scaling logic as camera.captureImage()
+                    const maxSize = 1280;
+                    let canvasWidth = img.width;
+                    let canvasHeight = img.height;
+
+                    if (img.width > maxSize || img.height > maxSize) {
+                        const aspectRatio = img.width / img.height;
+                        if (img.width > img.height) {
+                            canvasWidth = maxSize;
+                            canvasHeight = maxSize / aspectRatio;
+                        } else {
+                            canvasHeight = maxSize;
+                            canvasWidth = maxSize * aspectRatio;
+                        }
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = canvasWidth;
+                    canvas.height = canvasHeight;
+
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) {
+                        reject(new Error('Unable to create canvas context'));
+                        return;
+                    }
+
+                    ctx.drawImage(img, 0, 0, canvasWidth, canvasHeight);
+
+                    // Same quality calculation as camera.captureImage()
+                    const quality = canvasWidth * canvasHeight > 640 * 480 ? 0.7 : 0.8;
+                    const dataURL = canvas.toDataURL('image/jpeg', quality);
+
+                    if (!dataURL || dataURL.length < 100) {
+                        reject(new Error('Failed to generate image data'));
+                        return;
+                    }
+
+                    resolve(dataURL);
+                } catch (error) {
+                    reject(error);
+                }
+            };
+
+            img.onerror = () => {
+                URL.revokeObjectURL(url);
+                reject(new Error('Failed to load image file'));
+            };
+
+            img.src = url;
+        });
+    },
+
     // Convert file to base64 with mobile-specific handling
     fileToBase64: (file: File): Promise<string> => {
         return new Promise((resolve, reject) => {

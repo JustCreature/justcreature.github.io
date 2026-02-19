@@ -127,6 +127,10 @@ export class FilmTrackerPage {
     return this.page.getByRole('button', { name: /view gallery/i });
   }
 
+  get addFromGalleryButton() {
+    return this.page.getByRole('button', { name: /add from gallery/i });
+  }
+
   get apertureChip() {
     return this.page.locator('.MuiChip-root').filter({ hasText: /f\// }).first();
   }
@@ -176,6 +180,10 @@ export class FilmTrackerPage {
     camera?: string;
   }) {
     await this.createFilmRollButton.click();
+
+    // Wait for the dialog/form to be visible
+    await this.filmNameInput.waitFor({ state: 'visible', timeout: 5000 });
+
     await this.filmNameInput.fill(data.name);
 
     if (data.iso) {

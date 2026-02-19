@@ -56,6 +56,21 @@ See `.llm/procedure/` for workflows (e.g., `import-tasks-github.md`)
 
 ## Coding Best Practices
 
+### Testing Requirements
+**CRITICAL:** Before implementing any feature:
+1. **Run existing tests:** `npm run test:e2e` - All tests must pass
+2. **Add tests for new features:** Create focused Playwright tests in `e2e/`
+3. **Regression testing:** New implementations shouldn't break old tests unless it's a complete change of functionality
+4. **Test file naming:** Match functionality (e.g., `image-upload.spec.ts` for image upload features)
+5. **Keep tests focused:** Each test should verify one specific behavior
+
+**When to add tests:**
+- New user-facing features (camera, gallery, import/export)
+- Critical workflows (photo capture, data persistence)
+- Bug fixes (prevent regression)
+
+**Test structure:** Use page objects (`e2e/utils/page-objects.ts`), test data generators (`e2e/utils/test-data.ts`), and fixtures.
+
 ### Component Composition
 **DO:** Use shared from `src/components/common/` (DialogHeader, EmptyStateDisplay, ConfirmationDialog, EntityContextMenu, LensSelector, ApertureSelector, ShutterSpeedSelector). Extract when pattern appears 2+ times.
 
@@ -98,14 +113,14 @@ npm run version:{patch|minor|major}
 
 ### Testing
 ```bash
-npm run test:e2e           # 80 tests across 5 browsers
+npm run test:e2e           # All E2E tests across 5 browsers
 npm run test:e2e:ui        # Interactive mode
 npm run test:e2e:headed    # See browser
 npm run test:e2e:debug     # Inspector
 npm run test:e2e:report    # HTML report
 ```
 
-**Test files:** app-navigation, camera-management, film-roll-management, photography-workflow
+**Test files:** app-navigation, camera-management, film-roll-management, photography-workflow, lens-management, import-export, image-upload
 **Browsers:** Chromium, Firefox, WebKit, Mobile Chrome, Mobile Safari
 **Page Objects:** `e2e/utils/page-objects.ts`
 
