@@ -475,6 +475,7 @@ function App() {
             onExposureDelete={handleExposureDelete}
             onExposureUpdate={handleExposureUpdate}
             onBack={() => navigateToScreen('camera')}
+            onHome={() => navigateToScreen('filmrolls')}
             onDataImported={handleDataImported}
           />
         );

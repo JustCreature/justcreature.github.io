@@ -124,7 +124,7 @@ export class FilmTrackerPage {
   }
 
   get galleryButton() {
-    return this.page.getByRole('button', { name: /gallery/i });
+    return this.page.getByRole('button', { name: /view gallery/i });
   }
 
   get apertureChip() {
@@ -141,6 +141,10 @@ export class FilmTrackerPage {
 
   get backButton() {
     return this.page.getByRole('button', { name: /back/i });
+  }
+
+  get homeButton() {
+    return this.page.getByRole('button', { name: /home/i });
   }
 
   // Settings Dialog

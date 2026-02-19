@@ -20,20 +20,20 @@ test.describe('Import/Export', () => {
         // Import the data
         await filmTrackerPage.importJsonWithImages(testData);
 
-        // Should navigate to gallery screen showing the imported film roll
-        await expect(filmTrackerPage.galleryButton).toBeVisible({ timeout: 10000 });
+        // Should navigate to gallery screen directly after import
+        await expect(filmTrackerPage.homeButton).toBeVisible({ timeout: 10000 });
 
         // Verify film roll name has [IMPORTED] prefix
         await expect(filmTrackerPage.page.getByText(/\[IMPORTED\].*Imported Test Film/i)).toBeVisible();
 
         // Verify all exposures were imported
-        await expect(filmTrackerPage.page.getByText(/#1/)).toBeVisible();
-        await expect(filmTrackerPage.page.getByText(/#2/)).toBeVisible();
-        await expect(filmTrackerPage.page.getByText(/#3/)).toBeVisible();
+        await expect(filmTrackerPage.page.getByRole('heading', { name: '#1', exact: true })).toBeVisible();
+        await expect(filmTrackerPage.page.getByRole('heading', { name: '#2', exact: true })).toBeVisible();
+        await expect(filmTrackerPage.page.getByRole('heading', { name: '#3', exact: true })).toBeVisible();
 
-        // Verify exposure details are present
-        await expect(filmTrackerPage.page.getByText('f/8')).toBeVisible();
-        await expect(filmTrackerPage.page.getByText('1/125')).toBeVisible();
+        // Verify exposure details are present (use first() since multiple exposures may have same settings)
+        await expect(filmTrackerPage.page.getByText('f/8').first()).toBeVisible();
+        await expect(filmTrackerPage.page.getByText('1/125').first()).toBeVisible();
         await expect(filmTrackerPage.page.getByText('Test exposure 1')).toBeVisible();
     });
 
@@ -48,12 +48,14 @@ test.describe('Import/Export', () => {
         // Import the data
         await filmTrackerPage.importJsonWithImages(testData);
 
-        // Wait for navigation to gallery
-        await expect(filmTrackerPage.galleryButton).toBeVisible({ timeout: 10000 });
+        // Wait for navigation to gallery screen
+        await expect(filmTrackerPage.homeButton).toBeVisible({ timeout: 10000 });
 
-        // Navigate back to main screen
-        await filmTrackerPage.backButton.click();
-        await filmTrackerPage.backButton.click();
+        // Navigate back to film rolls list by clicking the home button
+        await filmTrackerPage.homeButton.click();
+
+        // Wait for film rolls screen to load
+        await expect(filmTrackerPage.filmRollsTab).toBeVisible({ timeout: 5000 });
 
         // Verify film roll appears in the list with [IMPORTED] prefix
         await expect(filmTrackerPage.page.getByText(/\[IMPORTED\].*Test Film for List/i)).toBeVisible();
@@ -74,11 +76,11 @@ test.describe('Import/Export', () => {
             exposureCount: 1
         });
         await filmTrackerPage.importJsonWithImages(testData1);
-        await expect(filmTrackerPage.galleryButton).toBeVisible({ timeout: 10000 });
+        await expect(filmTrackerPage.homeButton).toBeVisible({ timeout: 10000 });
 
-        // Navigate back to main screen
-        await filmTrackerPage.backButton.click();
-        await filmTrackerPage.backButton.click();
+        // Navigate back to main screen using home button
+        await filmTrackerPage.homeButton.click();
+        await expect(filmTrackerPage.filmRollsTab).toBeVisible({ timeout: 5000 });
 
         // Import second film roll
         const testData2 = generateExportData.jsonWithImages({
@@ -88,11 +90,11 @@ test.describe('Import/Export', () => {
             exposureCount: 2
         });
         await filmTrackerPage.importJsonWithImages(testData2);
-        await expect(filmTrackerPage.galleryButton).toBeVisible({ timeout: 10000 });
+        await expect(filmTrackerPage.homeButton).toBeVisible({ timeout: 10000 });
 
-        // Navigate back to main screen
-        await filmTrackerPage.backButton.click();
-        await filmTrackerPage.backButton.click();
+        // Navigate back to main screen using home button
+        await filmTrackerPage.homeButton.click();
+        await expect(filmTrackerPage.filmRollsTab).toBeVisible({ timeout: 5000 });
 
         // Verify both film rolls are in the list
         await expect(filmTrackerPage.page.getByText(/\[IMPORTED\].*First Import/i)).toBeVisible();
@@ -109,15 +111,15 @@ test.describe('Import/Export', () => {
 
         await filmTrackerPage.importJsonWithImages(testData);
 
-        // Verify navigation to gallery
-        await expect(filmTrackerPage.galleryButton).toBeVisible({ timeout: 10000 });
+        // Verify navigation to gallery screen
+        await expect(filmTrackerPage.homeButton).toBeVisible({ timeout: 10000 });
 
-        // Verify high exposure count is displayed
+        // Verify high exposure count is displayed in gallery (10/36)
         await expect(filmTrackerPage.page.getByText(/10.*36/)).toBeVisible();
 
         // Verify multiple exposures are visible
-        await expect(filmTrackerPage.page.getByText(/#1/)).toBeVisible();
-        await expect(filmTrackerPage.page.getByText(/#10/)).toBeVisible();
+        await expect(filmTrackerPage.page.getByRole('heading', { name: '#1', exact: true })).toBeVisible();
+        await expect(filmTrackerPage.page.getByRole('heading', { name: '#10', exact: true })).toBeVisible();
     });
 
     test('should preserve exposure metadata on import', async ({ filmTrackerPage, cleanApp }) => {
@@ -136,8 +138,8 @@ test.describe('Import/Export', () => {
 
         await filmTrackerPage.importJsonWithImages(testData);
 
-        // Verify in gallery
-        await expect(filmTrackerPage.galleryButton).toBeVisible({ timeout: 10000 });
+        // Verify navigation to gallery screen
+        await expect(filmTrackerPage.homeButton).toBeVisible({ timeout: 10000 });
 
         // Verify detailed metadata is preserved
         await expect(filmTrackerPage.page.getByText('f/1.4')).toBeVisible();

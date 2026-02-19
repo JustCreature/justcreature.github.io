@@ -34,7 +34,8 @@ import {
     Share,
     Close,
     Delete,
-    ContentCopy
+    ContentCopy,
+    Home
 } from '@mui/icons-material';
 import type { Exposure, FilmRoll, Lens } from '../types';
 import { exportUtils, googleDriveUtils } from '../utils/exportImport';
@@ -49,6 +50,7 @@ interface GalleryScreenProps {
     onExposureDelete?: (exposureId: string) => void;
     onExposureUpdate?: (exposure: Exposure) => void;
     onBack: () => void;
+    onHome?: () => void;
     onDataImported?: (filmRoll: FilmRoll, exposures: Exposure[]) => void;
 }
 
@@ -60,6 +62,7 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
     onExposureDelete,
     onExposureUpdate,
     onBack,
+    onHome,
     onDataImported
 }) => {
     const [showExportDialog, setShowExportDialog] = useState(false);
@@ -246,7 +249,7 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
             <Container maxWidth="sm" sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
                 {/* Header */}
                 <Box display="flex" alignItems="center" py={2}>
-                    <IconButton onClick={onBack} sx={{ mr: 1 }}>
+                    <IconButton onClick={onBack} sx={{ mr: 1 }} aria-label="Back">
                         <ArrowBack />
                     </IconButton>
                     <Box>
@@ -296,43 +299,57 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
     return (
         <Container maxWidth="sm" sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: colors.warmWhite }}>
             {/* Header - Film Contact Sheet Style */}
-            <Box display="flex" alignItems="center" py={2} borderBottom={`2px solid ${colors.coolGray}`}>
-                <IconButton
-                    onClick={onBack}
-                    sx={{
-                        mr: 1,
-                        '&:hover': { bgcolor: 'rgba(217, 119, 6, 0.08)' },
-                    }}
-                >
-                    <ArrowBack />
-                </IconButton>
-                <Box>
-                    <Typography
-                        variant="h6"
+            <Box display="flex" alignItems="center" justifyContent="space-between" py={2} borderBottom={`2px solid ${colors.coolGray}`}>
+                <Box display="flex" alignItems="center">
+                    <IconButton
+                        onClick={onBack}
                         sx={{
-                            fontWeight: 600,
-                            color: colors.charcoal,
-                            mb: 0.25,
+                            mr: 1,
+                            '&:hover': { bgcolor: 'rgba(217, 119, 6, 0.08)' },
                         }}
+                        aria-label="Back"
                     >
-                        {filmRoll.name}
-                    </Typography>
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            color: colors.silverGray,
-                            fontVariantNumeric: 'tabular-nums',
-                            fontSize: '0.8125rem',
-                        }}
-                    >
-                        ISO {filmRoll.iso}
-                        <Box component="span" sx={{ mx: 1, color: colors.coolGray }}>•</Box>
-                        <Box component="span" sx={{ fontWeight: 500 }}>
-                            {filmExposures.length}/{filmRoll.totalExposures}
-                        </Box>
-                        {' '}exposures
-                    </Typography>
+                        <ArrowBack />
+                    </IconButton>
+                    <Box>
+                        <Typography
+                            variant="h6"
+                            sx={{
+                                fontWeight: 600,
+                                color: colors.charcoal,
+                                mb: 0.25,
+                            }}
+                        >
+                            {filmRoll.name}
+                        </Typography>
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                color: colors.silverGray,
+                                fontVariantNumeric: 'tabular-nums',
+                                fontSize: '0.8125rem',
+                            }}
+                        >
+                            ISO {filmRoll.iso}
+                            <Box component="span" sx={{ mx: 1, color: colors.coolGray }}>•</Box>
+                            <Box component="span" sx={{ fontWeight: 500 }}>
+                                {filmExposures.length}/{filmRoll.totalExposures}
+                            </Box>
+                            {' '}exposures
+                        </Typography>
+                    </Box>
                 </Box>
+                {onHome && (
+                    <IconButton
+                        onClick={onHome}
+                        sx={{
+                            '&:hover': { bgcolor: 'rgba(217, 119, 6, 0.08)' },
+                        }}
+                        aria-label="Home"
+                    >
+                        <Home />
+                    </IconButton>
+                )}
             </Box>
 
             {/* Import/Export Buttons */}
