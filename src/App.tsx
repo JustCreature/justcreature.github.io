@@ -428,6 +428,7 @@ function App() {
             onFilmRollSelected={handleFilmRollSelected}
             onFilmRollCreated={handleFilmRollCreated}
             onFilmRollDeleted={handleFilmRollDeleted}
+            onDataImported={handleDataImported}
             onCameraCreated={handleCameraCreated}
             onCameraUpdated={handleCameraUpdated}
             onCameraDeleted={handleCameraDeleted}
@@ -474,6 +475,7 @@ function App() {
             onExposureDelete={handleExposureDelete}
             onExposureUpdate={handleExposureUpdate}
             onBack={() => navigateToScreen('camera')}
+            onHome={() => navigateToScreen('filmrolls')}
             onDataImported={handleDataImported}
           />
         );

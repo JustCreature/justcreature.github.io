@@ -124,3 +124,54 @@ export const validators = {
     return lens ? `${cameraBody}, ${lens}` : cameraBody;
   }
 };
+
+/**
+ * Generate export data for import testing
+ */
+export const generateExportData = {
+  /**
+   * Create a valid JSON with images export format
+   */
+  jsonWithImages: (filmRollData: {
+    name: string;
+    iso: number;
+    totalExposures: number;
+    exposureCount?: number;
+  }) => {
+    const filmRollId = `test-${Date.now()}`;
+    const exposureCount = filmRollData.exposureCount || 3;
+    const exposures = [];
+
+    for (let i = 1; i <= exposureCount; i++) {
+      exposures.push({
+        id: `exposure-${filmRollId}-${i}`,
+        filmRollId: filmRollId,
+        exposureNumber: i,
+        aperture: 'f/8',
+        shutterSpeed: '1/125',
+        additionalInfo: `Test exposure ${i}`,
+        // Small 1x1 red pixel PNG as base64
+        imageData: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==',
+        capturedAt: new Date().toISOString(),
+        ei: filmRollData.iso,
+        lensId: undefined,
+        lensName: undefined,
+        focalLength: 50
+      });
+    }
+
+    return {
+      filmRoll: {
+        id: filmRollId,
+        name: filmRollData.name,
+        iso: filmRollData.iso,
+        totalExposures: filmRollData.totalExposures,
+        createdAt: new Date().toISOString()
+      },
+      exposures: exposures,
+      exportedAt: new Date().toISOString(),
+      version: '2.0.0',
+      exportType: 'with-images'
+    };
+  }
+};

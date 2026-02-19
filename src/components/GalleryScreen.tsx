@@ -34,7 +34,8 @@ import {
     Share,
     Close,
     Delete,
-    ContentCopy
+    ContentCopy,
+    Home
 } from '@mui/icons-material';
 import type { Exposure, FilmRoll, Lens } from '../types';
 import { exportUtils, googleDriveUtils } from '../utils/exportImport';
@@ -49,6 +50,7 @@ interface GalleryScreenProps {
     onExposureDelete?: (exposureId: string) => void;
     onExposureUpdate?: (exposure: Exposure) => void;
     onBack: () => void;
+    onHome?: () => void;
     onDataImported?: (filmRoll: FilmRoll, exposures: Exposure[]) => void;
 }
 
@@ -60,16 +62,18 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
     onExposureDelete,
     onExposureUpdate,
     onBack,
+    onHome,
     onDataImported
 }) => {
     const [showExportDialog, setShowExportDialog] = useState(false);
     const [showImportDialog, setShowImportDialog] = useState(false);
     const [exportFolderName, setExportFolderName] = useState('');
     const [importFolderName, setImportFolderName] = useState('');
-    const [exportMethod, setExportMethod] = useState<'local' | 'googledrive' | 'jsononly'>('local');
-    const [importMethod, setImportMethod] = useState<'local' | 'googledrive'>('local');
+    const [exportMethod, setExportMethod] = useState<'local' | 'googledrive' | 'jsononly' | 'jsonwithimages'>('local');
+    const [importMethod, setImportMethod] = useState<'local' | 'googledrive' | 'jsonwithimages'>('local');
     const [isProcessing, setIsProcessing] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const jsonWithImagesInputRef = useRef<HTMLInputElement>(null);
 
     const filmExposures = exposures.filter(exposure => exposure.filmRollId === filmRoll.id)
         .sort((a, b) => a.exposureNumber - b.exposureNumber);
@@ -96,7 +100,7 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
     };
 
     const handleExport = async () => {
-        if (exportMethod !== 'jsononly' && !exportFolderName.trim()) {
+        if (exportMethod !== 'jsononly' && exportMethod !== 'jsonwithimages' && !exportFolderName.trim()) {
             alert('Please enter a folder name');
             return;
         }
@@ -107,6 +111,8 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
                 await googleDriveUtils.exportToGoogleDrive(filmRoll, filmExposures, lenses, exportFolderName);
             } else if (exportMethod === 'jsononly') {
                 await exportUtils.exportJsonOnly(filmRoll, filmExposures, lenses);
+            } else if (exportMethod === 'jsonwithimages') {
+                await exportUtils.exportJsonWithImages(filmRoll, filmExposures, lenses);
             } else {
                 await exportUtils.exportToLocal(filmRoll, filmExposures, lenses, exportFolderName);
             }
@@ -132,8 +138,13 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
                     return;
                 }
                 result = await googleDriveUtils.importFromGoogleDrive(importFolderName);
+            } else if (importMethod === 'jsonwithimages') {
+                // Trigger file input for JSON with images
+                jsonWithImagesInputRef.current?.click();
+                setIsProcessing(false);
+                return;
             } else {
-                // Trigger file input for local import
+                // Trigger file input for local multi-file import
                 fileInputRef.current?.click();
                 setIsProcessing(false);
                 return;
@@ -141,8 +152,10 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
 
             if (result && onDataImported) {
                 // Save imported data
-                storage.saveFilmRoll(result.filmRoll);
-                result.exposures.forEach(exposure => storage.saveExposure(exposure));
+                await storage.saveFilmRoll(result.filmRoll);
+                for (const exposure of result.exposures) {
+                    await storage.saveExposure(exposure);
+                }
 
                 onDataImported(result.filmRoll, result.exposures);
                 setShowImportDialog(false);
@@ -165,8 +178,10 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
             const result = await exportUtils.importFromLocal(files);
             if (result && onDataImported) {
                 // Save imported data
-                storage.saveFilmRoll(result.filmRoll);
-                result.exposures.forEach(exposure => storage.saveExposure(exposure));
+                await storage.saveFilmRoll(result.filmRoll);
+                for (const exposure of result.exposures) {
+                    await storage.saveExposure(exposure);
+                }
 
                 onDataImported(result.filmRoll, result.exposures);
                 setShowImportDialog(false);
@@ -180,6 +195,33 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
 
         // Clear the input
         event.target.value = '';
+    };
+
+    const handleJsonWithImagesFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        try {
+            const result = await exportUtils.importJsonWithImages(file);
+
+            if (result && onDataImported) {
+                // Save imported data
+                await storage.saveFilmRoll(result.filmRoll);
+                for (const exposure of result.exposures) {
+                    await storage.saveExposure(exposure);
+                }
+
+                onDataImported(result.filmRoll, result.exposures);
+                setShowImportDialog(false);
+                alert(`Successfully imported film roll: ${result.filmRoll.name}\nExposures: ${result.exposures.length}`);
+            }
+        } catch (error) {
+            console.error('Import failed:', error);
+            alert('Import failed. Please check the file and try again.');
+        } finally {
+            // Reset file input
+            event.target.value = '';
+        }
     };
 
     const handleDeleteExposure = (exposureId: string, exposureNumber: number) => {
@@ -207,7 +249,7 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
             <Container maxWidth="sm" sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
                 {/* Header */}
                 <Box display="flex" alignItems="center" py={2}>
-                    <IconButton onClick={onBack} sx={{ mr: 1 }}>
+                    <IconButton onClick={onBack} sx={{ mr: 1 }} aria-label="Back">
                         <ArrowBack />
                     </IconButton>
                     <Box>
@@ -257,43 +299,57 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
     return (
         <Container maxWidth="sm" sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: colors.warmWhite }}>
             {/* Header - Film Contact Sheet Style */}
-            <Box display="flex" alignItems="center" py={2} borderBottom={`2px solid ${colors.coolGray}`}>
-                <IconButton
-                    onClick={onBack}
-                    sx={{
-                        mr: 1,
-                        '&:hover': { bgcolor: 'rgba(217, 119, 6, 0.08)' },
-                    }}
-                >
-                    <ArrowBack />
-                </IconButton>
-                <Box>
-                    <Typography
-                        variant="h6"
+            <Box display="flex" alignItems="center" justifyContent="space-between" py={2} borderBottom={`2px solid ${colors.coolGray}`}>
+                <Box display="flex" alignItems="center">
+                    <IconButton
+                        onClick={onBack}
                         sx={{
-                            fontWeight: 600,
-                            color: colors.charcoal,
-                            mb: 0.25,
+                            mr: 1,
+                            '&:hover': { bgcolor: 'rgba(217, 119, 6, 0.08)' },
                         }}
+                        aria-label="Back"
                     >
-                        {filmRoll.name}
-                    </Typography>
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            color: colors.silverGray,
-                            fontVariantNumeric: 'tabular-nums',
-                            fontSize: '0.8125rem',
-                        }}
-                    >
-                        ISO {filmRoll.iso}
-                        <Box component="span" sx={{ mx: 1, color: colors.coolGray }}>•</Box>
-                        <Box component="span" sx={{ fontWeight: 500 }}>
-                            {filmExposures.length}/{filmRoll.totalExposures}
-                        </Box>
-                        {' '}exposures
-                    </Typography>
+                        <ArrowBack />
+                    </IconButton>
+                    <Box>
+                        <Typography
+                            variant="h6"
+                            sx={{
+                                fontWeight: 600,
+                                color: colors.charcoal,
+                                mb: 0.25,
+                            }}
+                        >
+                            {filmRoll.name}
+                        </Typography>
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                color: colors.silverGray,
+                                fontVariantNumeric: 'tabular-nums',
+                                fontSize: '0.8125rem',
+                            }}
+                        >
+                            ISO {filmRoll.iso}
+                            <Box component="span" sx={{ mx: 1, color: colors.coolGray }}>•</Box>
+                            <Box component="span" sx={{ fontWeight: 500 }}>
+                                {filmExposures.length}/{filmRoll.totalExposures}
+                            </Box>
+                            {' '}exposures
+                        </Typography>
+                    </Box>
                 </Box>
+                {onHome && (
+                    <IconButton
+                        onClick={onHome}
+                        sx={{
+                            '&:hover': { bgcolor: 'rgba(217, 119, 6, 0.08)' },
+                        }}
+                        aria-label="Home"
+                    >
+                        <Home />
+                    </IconButton>
+                )}
             </Box>
 
             {/* Import/Export Buttons */}
@@ -518,6 +574,15 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
                 onChange={handleFileImport}
             />
 
+            {/* Hidden file input for JSON-with-images import */}
+            <input
+                type="file"
+                ref={jsonWithImagesInputRef}
+                style={{ display: 'none' }}
+                accept="application/json"
+                onChange={handleJsonWithImagesFileSelect}
+            />
+
             {/* Export Dialog */}
             <Dialog open={showExportDialog} onClose={() => setShowExportDialog(false)} maxWidth="sm" fullWidth>
                 <DialogTitle>
@@ -530,24 +595,11 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
                 </DialogTitle>
                 <DialogContent>
                     <Stack spacing={3} sx={{ pt: 1 }}>
-                        <TextField
-                            fullWidth
-                            label="Folder Name"
-                            value={exportFolderName}
-                            onChange={(e) => setExportFolderName(e.target.value)}
-                            placeholder={`${filmRoll.name.replace(/\s+/g, '_')}_export`}
-                            helperText={exportMethod === 'jsononly'
-                                ? "Not required for JSON-only export"
-                                : "This will be the name of the folder containing your photos and metadata"
-                            }
-                            disabled={exportMethod === 'jsononly'}
-                        />
-
                         <FormControl component="fieldset">
                             <FormLabel component="legend">Export Method</FormLabel>
                             <RadioGroup
                                 value={exportMethod}
-                                onChange={(e) => setExportMethod(e.target.value as 'local' | 'googledrive' | 'jsononly')}
+                                onChange={(e) => setExportMethod(e.target.value as 'local' | 'googledrive' | 'jsononly' | 'jsonwithimages')}
                             >
                                 <FormControlLabel
                                     value="local"
@@ -574,6 +626,18 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
                                     }
                                 />
                                 <FormControlLabel
+                                    value="jsonwithimages"
+                                    control={<Radio />}
+                                    label={
+                                        <Box>
+                                            <Typography variant="body2">JSON with Images</Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                                Single JSON file with embedded images
+                                            </Typography>
+                                        </Box>
+                                    }
+                                />
+                                <FormControlLabel
                                     value="googledrive"
                                     control={<Radio />}
                                     label={
@@ -586,7 +650,27 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
                                     }
                                 />
                             </RadioGroup>
+                            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                                Local: Creates metadata.json + image files<br />
+                                JSON Only: Metadata without images<br />
+                                JSON with Images: Single JSON file with embedded images<br />
+                                Google Drive: Requires API setup
+                            </Typography>
                         </FormControl>
+
+                        <TextField
+                            fullWidth
+                            label="Folder/File Name"
+                            value={exportFolderName}
+                            onChange={(e) => setExportFolderName(e.target.value)}
+                            placeholder={`${filmRoll.name.replace(/\s+/g, '_')}_export`}
+                            disabled={exportMethod === 'jsononly' || exportMethod === 'jsonwithimages'}
+                            helperText={
+                                exportMethod === 'jsononly' || exportMethod === 'jsonwithimages'
+                                    ? 'Not needed for single-file export'
+                                    : 'Name for organizing downloaded files'
+                            }
+                        />
                     </Stack>
                 </DialogContent>
                 <DialogActions>
@@ -594,14 +678,14 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
                     <Button
                         onClick={handleExport}
                         variant="contained"
-                        disabled={isProcessing || (exportMethod !== 'jsononly' && !exportFolderName.trim())}
+                        disabled={isProcessing || (exportMethod !== 'jsononly' && exportMethod !== 'jsonwithimages' && !exportFolderName.trim())}
                         startIcon={
                             exportMethod === 'googledrive' ? <CloudUpload /> :
-                                exportMethod === 'jsononly' ? <Share /> : <Save />
+                                (exportMethod === 'jsononly' || exportMethod === 'jsonwithimages') ? <Share /> : <Save />
                         }
                     >
                         {isProcessing ? 'Exporting...' :
-                            exportMethod === 'jsononly' ? 'Share JSON' : 'Export'}
+                            (exportMethod === 'jsononly' || exportMethod === 'jsonwithimages') ? 'Export JSON' : 'Export'}
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -622,7 +706,7 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
                             <FormLabel component="legend">Import Method</FormLabel>
                             <RadioGroup
                                 value={importMethod}
-                                onChange={(e) => setImportMethod(e.target.value as 'local' | 'googledrive')}
+                                onChange={(e) => setImportMethod(e.target.value as 'local' | 'googledrive' | 'jsonwithimages')}
                             >
                                 <FormControlLabel
                                     value="local"
@@ -632,6 +716,18 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
                                             <Typography variant="body2">Local Files</Typography>
                                             <Typography variant="caption" color="text.secondary">
                                                 Select files from your device
+                                            </Typography>
+                                        </Box>
+                                    }
+                                />
+                                <FormControlLabel
+                                    value="jsonwithimages"
+                                    control={<Radio />}
+                                    label={
+                                        <Box>
+                                            <Typography variant="body2">Import JSON with Images</Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                                Select single JSON file with embedded images
                                             </Typography>
                                         </Box>
                                     }
@@ -649,23 +745,40 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
                                     }
                                 />
                             </RadioGroup>
+                            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                                Local Files: Select metadata.json + image files<br />
+                                JSON with Images: Select single JSON file with embedded images<br />
+                                Google Drive: Requires API setup
+                            </Typography>
                         </FormControl>
 
-                        {importMethod === 'googledrive' && (
-                            <TextField
-                                fullWidth
-                                label="Folder Name"
-                                value={importFolderName}
-                                onChange={(e) => setImportFolderName(e.target.value)}
-                                placeholder="Enter Google Drive folder name"
-                                helperText="Name of the folder in Google Drive containing the exported data"
-                            />
+                        {importMethod !== 'jsonwithimages' && (
+                            <>
+                                {importMethod === 'googledrive' && (
+                                    <TextField
+                                        fullWidth
+                                        label="Folder Name"
+                                        value={importFolderName}
+                                        onChange={(e) => setImportFolderName(e.target.value)}
+                                        placeholder="Enter Google Drive folder name"
+                                        helperText="Name of the folder in Google Drive containing the exported data"
+                                    />
+                                )}
+
+                                {importMethod === 'local' && (
+                                    <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+                                        <Typography variant="body2" color="text.secondary">
+                                            Click "Import" to select the metadata.json file and all image files from your exported folder.
+                                        </Typography>
+                                    </Paper>
+                                )}
+                            </>
                         )}
 
-                        {importMethod === 'local' && (
+                        {importMethod === 'jsonwithimages' && (
                             <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
                                 <Typography variant="body2" color="text.secondary">
-                                    Click "Import" to select the metadata.json file and all image files from your exported folder.
+                                    Click "Import" to select a JSON file exported with the "JSON with Images" option.
                                 </Typography>
                             </Paper>
                         )}

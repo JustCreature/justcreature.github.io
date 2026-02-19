@@ -343,7 +343,7 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Box display="flex" alignItems="center" gap={1}>
                     {onBack && (
-                        <IconButton onClick={onBack} color="primary">
+                        <IconButton onClick={onBack} color="primary" aria-label="Back">
                             <ArrowBack />
                         </IconButton>
                     )}
@@ -377,7 +377,7 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
                         </Typography>
                     </Box>
                 </Box>
-                <IconButton onClick={onOpenGallery} color="primary">
+                <IconButton onClick={onOpenGallery} color="primary" aria-label="View Gallery">
                     <PhotoLibrary />
                 </IconButton>
             </Box>

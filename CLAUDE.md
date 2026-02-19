@@ -8,21 +8,32 @@ Film Photography Tracker - PWA for tracking film photography metadata. React 18,
 
 ## Feature Documentation Process
 
+**IMPORTANT:** Keep all .md files concise. Focus on key decisions, changed files, and user impact. Avoid verbose explanations.
+
 ### Completed Features
-1. Document in `.llm/features/done_F-{n}.md` (same n as plan)
-2. Include: overview, files changed, APIs, tests, commits, migrations
-3. Delete plan from `.llm/tasks/todo/`
+1. Create `.llm/features/done_F-{n}.md` (NOT in tasks/todo/)
+2. Include: overview, key components, files changed, tests, commits
+3. Delete `.llm/tasks/todo/plan_F-{n}.md`
+4. Keep concise (~100-300 lines, not 500+)
+
+**Format:**
+- Brief overview (2-3 sentences)
+- Key components (bullet points)
+- Technical details (files changed, line counts)
+- User benefits
+- Testing coverage
+- Single commit message
 
 ### Planned Features
 1. Create `.llm/tasks/todo/plan_F-{n}.md`
-2. Include: problem, solution, steps, benefits, effort
-3. Move to `done_F-{n}.md` when done (KEEP NUMBER)
+2. Include: problem, solution, implementation steps, benefits
+3. Keep focused (avoid rambling)
 
 **Plan mode:** Write to `.llm/tasks/todo/plan_F-{n}.md` (NOT `~/.claude/plans/`)
 
 ### Feature Numbering
 - Numbers = plan date, not implement date
-- `plan_F-6.md` → `done_F-6.md` (never renumber)
+- `plan_F-6.md` → `done_F-6.md` (KEEP NUMBER)
 - Gaps expected (e.g., `done_F-1.md`, `done_F-6.md`, `plan_F-2.md`, `plan_F-5.md`)
 
 ### GitHub Integration
@@ -30,8 +41,18 @@ Film Photography Tracker - PWA for tracking film photography metadata. React 18,
 - Invoke: `procedure{source_github}` (label: `ready_for_dev`)
 - F-n ≠ ISSUE-n (never mix)
 
+### Documentation Style
+- **Concise:** Essential info only, no fluff
+- **Scannable:** Headers, bullets, code blocks
+- **Actionable:** What changed, where, why
+- **No duplication:** Don't repeat what's in code/commits
+
 ## LLM Procedures
 See `.llm/procedure/` for workflows (e.g., `import-tasks-github.md`)
+
+## Git Workflow
+
+**IMPORTANT:** Skip all git commands (`git add`, `git commit`, `git push`). User handles version control manually.
 
 ## Coding Best Practices
 

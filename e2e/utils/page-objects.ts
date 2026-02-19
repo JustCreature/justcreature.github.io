@@ -124,7 +124,7 @@ export class FilmTrackerPage {
   }
 
   get galleryButton() {
-    return this.page.getByRole('button', { name: /gallery/i });
+    return this.page.getByRole('button', { name: /view gallery/i });
   }
 
   get apertureChip() {
@@ -141,6 +141,10 @@ export class FilmTrackerPage {
 
   get backButton() {
     return this.page.getByRole('button', { name: /back/i });
+  }
+
+  get homeButton() {
+    return this.page.getByRole('button', { name: /home/i });
   }
 
   // Settings Dialog
@@ -303,5 +307,73 @@ export class FilmTrackerPage {
   async mockGeolocation() {
     await this.page.context().grantPermissions(['geolocation']);
     await this.page.context().setGeolocation({ latitude: 37.7749, longitude: -122.4194 });
+  }
+
+  // Import/Export Elements
+  get importButton() {
+    return this.page.getByRole('button', { name: /import/i });
+  }
+
+  get exportButton() {
+    return this.page.getByRole('button', { name: /export/i });
+  }
+
+  get importDialog() {
+    return this.page.getByRole('dialog').filter({ has: this.page.getByText(/import.*data/i) });
+  }
+
+  get exportDialog() {
+    return this.page.getByRole('dialog').filter({ has: this.page.getByText(/export.*data/i) });
+  }
+
+  get importMethodLocal() {
+    return this.page.getByRole('radio', { name: /local files/i });
+  }
+
+  get importMethodJsonWithImages() {
+    return this.page.getByRole('radio', { name: /import json with images/i });
+  }
+
+  get importMethodGoogleDrive() {
+    return this.page.getByRole('radio', { name: /google drive/i });
+  }
+
+  get importSubmitButton() {
+    return this.page.getByRole('button', { name: /^import$/i });
+  }
+
+  get exportSubmitButton() {
+    return this.page.getByRole('button', { name: /^export/i });
+  }
+
+  /**
+   * Import a JSON file with images
+   * @param jsonContent The JSON content to import
+   */
+  async importJsonWithImages(jsonContent: object) {
+    // Click import button
+    await this.importButton.click();
+
+    // Wait for dialog to be visible
+    await this.importDialog.waitFor({ state: 'visible' });
+
+    // Select JSON with Images method
+    await this.importMethodJsonWithImages.click();
+
+    // Click import button to trigger file picker
+    const fileChooserPromise = this.page.waitForEvent('filechooser');
+    await this.importSubmitButton.click();
+    const fileChooser = await fileChooserPromise;
+
+    // Create a mock file with the JSON content
+    const buffer = Buffer.from(JSON.stringify(jsonContent, null, 2));
+    await fileChooser.setFiles([{
+      name: 'test_import.json',
+      mimeType: 'application/json',
+      buffer
+    }]);
+
+    // Wait for import to complete (dialog should close)
+    await this.importDialog.waitFor({ state: 'hidden', timeout: 10000 });
   }
 }

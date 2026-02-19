@@ -125,7 +125,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
             {/* Header */}
             <Box display="flex" alignItems="center" justifyContent="space-between" py={2}>
                 <Box display="flex" alignItems="center">
-                    <IconButton onClick={onBack} sx={{ mr: 1 }}>
+                    <IconButton onClick={onBack} sx={{ mr: 1 }} aria-label="Back">
                         <ArrowBack />
                     </IconButton>
                     <Typography variant="h6" fontWeight="bold">
