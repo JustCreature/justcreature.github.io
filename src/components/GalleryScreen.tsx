@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
     Box,
     Container,
@@ -50,7 +50,6 @@ interface GalleryScreenProps {
     onExposureUpdate?: (exposure: Exposure) => void;
     onBack: () => void;
     onHome?: () => void;
-    onDataImported?: (filmRoll: FilmRoll, exposures: Exposure[]) => void;
     onExposureTaken: (exposure: Exposure) => void;
     currentSettings: import('../types').ExposureSettings;
     setCurrentSettings: React.Dispatch<React.SetStateAction<import('../types').ExposureSettings>>;
@@ -65,7 +64,6 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
     onExposureUpdate,
     onBack,
     onHome,
-    onDataImported,
     onExposureTaken,
     currentSettings,
     setCurrentSettings
@@ -75,9 +73,34 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
     const [exportMethod, setExportMethod] = useState<'local' | 'googledrive' | 'jsononly' | 'jsonwithimages'>('local');
     const [isProcessing, setIsProcessing] = useState(false);
     const galleryInputRef = useRef<HTMLInputElement>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     const filmExposures = exposures.filter(exposure => exposure.filmRollId === filmRoll.id)
         .sort((a, b) => a.exposureNumber - b.exposureNumber);
+
+    // Restore scroll position on mount
+    useEffect(() => {
+        const scrollKey = `gallery-scroll-${filmRoll.id}`;
+        const savedScrollPos = sessionStorage.getItem(scrollKey);
+
+        if (savedScrollPos && scrollContainerRef.current) {
+            // Use setTimeout to ensure DOM is fully rendered
+            setTimeout(() => {
+                if (scrollContainerRef.current) {
+                    scrollContainerRef.current.scrollTop = parseInt(savedScrollPos, 10);
+                }
+            }, 0);
+        }
+    }, [filmRoll.id]);
+
+    const handleExposureSelect = (exposure: Exposure) => {
+        // Save scroll position before navigating
+        if (scrollContainerRef.current) {
+            const scrollKey = `gallery-scroll-${filmRoll.id}`;
+            sessionStorage.setItem(scrollKey, scrollContainerRef.current.scrollTop.toString());
+        }
+        onExposureSelect(exposure);
+    };
 
     const currentExposureNumber = filmExposures.length + 1;
 
@@ -358,7 +381,7 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
             </Box>
 
             {/* Exposures Grid */}
-            <Box sx={{ flex: 1, overflowY: 'auto' }}>
+            <Box ref={scrollContainerRef} sx={{ flex: 1, overflowY: 'auto' }}>
                 <Stack spacing={2}>
                     {filmExposures.map((exposure, index) => {
                         const previousExposure = index > 0 ? filmExposures[index - 1] : null;
@@ -380,7 +403,7 @@ export const GalleryScreen: React.FC<GalleryScreenProps> = ({
                                 </Box>
                             )}
                             <Card
-                                onClick={() => onExposureSelect(exposure)}
+                                onClick={() => handleExposureSelect(exposure)}
                                 sx={{
                                     cursor: 'pointer',
                                     position: 'relative',

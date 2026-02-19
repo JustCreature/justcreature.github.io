@@ -26,7 +26,7 @@ import {
     Close,
     ArrowBack
 } from '@mui/icons-material';
-import { camera, geolocation, fileUtils } from '../utils/camera';
+import { camera, geolocation } from '../utils/camera';
 import type { FilmRoll, Exposure, ExposureSettings, Lens } from '../types';
 import { APERTURE, APERTURE_VALUES, SHUTTER_SPEED, SHUTTER_SPEED_VALUES, EI_VALUES } from '../types';
 import { FocalLengthSlider } from './FocalLengthSlider';
