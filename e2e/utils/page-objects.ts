@@ -180,6 +180,10 @@ export class FilmTrackerPage {
     camera?: string;
   }) {
     await this.createFilmRollButton.click();
+
+    // Wait for the dialog/form to be visible
+    await this.filmNameInput.waitFor({ state: 'visible', timeout: 5000 });
+
     await this.filmNameInput.fill(data.name);
 
     if (data.iso) {

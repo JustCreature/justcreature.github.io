@@ -110,12 +110,14 @@ test.describe('Image Upload and Scaling', () => {
         await filmTrackerPage.page.getByText(/#1/).click();
         await expect(filmTrackerPage.page.getByText(/Exposure #1/)).toBeVisible();
 
-        // Click edit button
-        await filmTrackerPage.page.getByRole('button', { name: /edit/i }).click();
+        // Click edit button (first icon button in the header actions area)
+        const editButton = filmTrackerPage.page.locator('button:has(svg[data-testid="EditIcon"])');
+        await editButton.click();
 
         // Click gallery button in the image overlay
         const fileChooserPromise2 = page.waitForEvent('filechooser');
-        await filmTrackerPage.page.getByRole('button', { name: /photo library/i }).click();
+        const galleryButton = filmTrackerPage.page.locator('button:has(svg[data-testid="PhotoLibraryIcon"])');
+        await galleryButton.click();
         const fileChooser2 = await fileChooserPromise2;
 
         // Upload replacement image
