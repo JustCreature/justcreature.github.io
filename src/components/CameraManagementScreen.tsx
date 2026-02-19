@@ -8,25 +8,24 @@ import {
     Toolbar,
     Button,
     Dialog,
-    DialogTitle,
     DialogContent,
     DialogActions,
     TextField,
     Stack,
     Alert,
-    IconButton,
-    Menu,
-    MenuItem
+    IconButton
 } from '@mui/material';
 import {
     Add,
     CameraAlt,
-    Edit,
-    Delete,
     MoreVert
 } from '@mui/icons-material';
 import type { Camera } from '../types';
 import { ItemCard } from './ItemCard';
+import { EmptyStateDisplay } from './common/EmptyStateDisplay';
+import { DialogHeader } from './common/DialogHeader';
+import { ConfirmationDialog } from './common/ConfirmationDialog';
+import { EntityContextMenu } from './common/EntityContextMenu';
 
 
 interface CameraManagementScreenProps {
@@ -46,6 +45,8 @@ export const CameraManagementScreen: React.FC<CameraManagementScreenProps> = ({
     const [editingCamera, setEditingCamera] = useState<Camera | null>(null);
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
     const [selectedCamera, setSelectedCamera] = useState<Camera | null>(null);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [cameraToDelete, setCameraToDelete] = useState<Camera | null>(null);
 
     // Form state
     const [formData, setFormData] = useState({
@@ -114,13 +115,17 @@ export const CameraManagementScreen: React.FC<CameraManagementScreenProps> = ({
     };
 
     const handleDeleteClick = (camera: Camera) => {
-        const confirmed = window.confirm(
-            `Delete camera "${camera.name}"?\n\nThis will not affect existing film rolls using this camera.`
-        );
-        if (confirmed) {
-            onCameraDeleted(camera.id);
-        }
+        setCameraToDelete(camera);
+        setDeleteConfirmOpen(true);
         setMenuAnchor(null);
+    };
+
+    const confirmDelete = () => {
+        if (cameraToDelete) {
+            onCameraDeleted(cameraToDelete.id);
+        }
+        setDeleteConfirmOpen(false);
+        setCameraToDelete(null);
     };
 
     const handleMenuClick = (event: React.MouseEvent<HTMLElement>, camera: Camera) => {
@@ -154,30 +159,13 @@ export const CameraManagementScreen: React.FC<CameraManagementScreenProps> = ({
 
             <Container maxWidth="lg" sx={{ py: 3 }}>
                 {cameras.length === 0 ? (
-                    <Box
-                        display="flex"
-                        flexDirection="column"
-                        alignItems="center"
-                        justifyContent="center"
-                        minHeight="60vh"
-                        textAlign="center"
-                    >
-                        <CameraAlt sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
-                        <Typography variant="h5" gutterBottom color="text.secondary">
-                            No Cameras Added Yet
-                        </Typography>
-                        <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 400 }}>
-                            Add your camera equipment to automatically include metadata in your film roll exports.
-                        </Typography>
-                        <Button
-                            variant="contained"
-                            startIcon={<Add />}
-                            onClick={() => setShowCreateDialog(true)}
-                            size="large"
-                        >
-                            Add Camera
-                        </Button>
-                    </Box>
+                    <EmptyStateDisplay
+                        icon={<CameraAlt sx={{ fontSize: 80 }} />}
+                        title="No Cameras Added Yet"
+                        description="Add your camera equipment to automatically include metadata in your film roll exports."
+                        actionLabel="Add Camera"
+                        onAction={() => setShowCreateDialog(true)}
+                    />
                 ) : (
                     <>
                         <Box sx={{ mb: 3 }}>
@@ -256,9 +244,15 @@ export const CameraManagementScreen: React.FC<CameraManagementScreenProps> = ({
                 maxWidth="sm"
                 fullWidth
             >
-                <DialogTitle>
-                    {editingCamera ? 'Edit Camera' : 'Add New Camera'}
-                </DialogTitle>
+                <DialogHeader
+                    title={editingCamera ? 'Edit Camera' : 'Add New Camera'}
+                    icon={<CameraAlt />}
+                    onClose={() => {
+                        setShowCreateDialog(false);
+                        setEditingCamera(null);
+                        resetForm();
+                    }}
+                />
                 <DialogContent>
                     <Stack spacing={3} sx={{ pt: 1 }}>
                         <TextField
@@ -313,20 +307,27 @@ export const CameraManagementScreen: React.FC<CameraManagementScreenProps> = ({
             </Dialog>
 
             {/* Camera Actions Menu */}
-            <Menu
+            <EntityContextMenu
                 anchorEl={menuAnchor}
-                open={Boolean(menuAnchor)}
                 onClose={handleMenuClose}
-            >
-                <MenuItem onClick={() => selectedCamera && handleEditClick(selectedCamera)}>
-                    <Edit sx={{ mr: 1 }} />
-                    Edit
-                </MenuItem>
-                <MenuItem onClick={() => selectedCamera && handleDeleteClick(selectedCamera)}>
-                    <Delete sx={{ mr: 1 }} />
-                    Delete
-                </MenuItem>
-            </Menu>
+                onEdit={() => selectedCamera && handleEditClick(selectedCamera)}
+                onDelete={() => selectedCamera && handleDeleteClick(selectedCamera)}
+            />
+
+            {/* Delete Confirmation Dialog */}
+            <ConfirmationDialog
+                open={deleteConfirmOpen}
+                title="Delete Camera"
+                message={`Are you sure you want to delete "${cameraToDelete?.name}"?`}
+                warningText="This will not affect existing film rolls using this camera."
+                confirmText="Delete"
+                severity="error"
+                onConfirm={confirmDelete}
+                onCancel={() => {
+                    setDeleteConfirmOpen(false);
+                    setCameraToDelete(null);
+                }}
+            />
         </Box>
     );
 };

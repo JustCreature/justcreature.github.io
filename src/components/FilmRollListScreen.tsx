@@ -6,33 +6,28 @@ import {
     Fab,
     AppBar,
     Toolbar,
-    Button,
     Dialog,
-    DialogTitle,
     DialogContent,
-    DialogActions,
-    Alert,
     Card,
     CardMedia,
     CardContent,
     Chip,
     Stack,
-    IconButton,
-    Menu,
-    MenuItem
+    IconButton
 } from '@mui/material';
 import {
     Add,
-    CameraAlt,
     PhotoLibrary,
     MoreVert,
-    Edit,
-    Delete,
-    Close
+    CameraAlt
 } from '@mui/icons-material';
 import type { FilmRoll, Exposure, Camera, Lens } from '../types';
 import { SetupScreen } from './SetupScreen';
 import { storage } from '../utils/storage';
+import { EmptyStateDisplay } from './common/EmptyStateDisplay';
+import { DialogHeader } from './common/DialogHeader';
+import { ConfirmationDialog } from './common/ConfirmationDialog';
+import { EntityContextMenu } from './common/EntityContextMenu';
 
 interface FilmRollListScreenProps {
     filmRolls: FilmRoll[];
@@ -156,30 +151,13 @@ export const FilmRollListScreen: React.FC<FilmRollListScreenProps> = ({
 
             <Container maxWidth="lg" sx={{ py: 3 }}>
                 {filmRolls.length === 0 ? (
-                    <Box
-                        display="flex"
-                        flexDirection="column"
-                        alignItems="center"
-                        justifyContent="center"
-                        minHeight="60vh"
-                        textAlign="center"
-                    >
-                        <PhotoLibrary sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
-                        <Typography variant="h5" gutterBottom color="text.secondary">
-                            No Film Rolls Yet
-                        </Typography>
-                        <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 400 }}>
-                            Create your first film roll to start tracking your analog photography journey.
-                        </Typography>
-                        <Button
-                            variant="contained"
-                            startIcon={<Add />}
-                            onClick={() => setShowCreateDialog(true)}
-                            size="large"
-                        >
-                            Create Film Roll
-                        </Button>
-                    </Box>
+                    <EmptyStateDisplay
+                        icon={<PhotoLibrary sx={{ fontSize: 80 }} />}
+                        title="No Film Rolls Yet"
+                        description="Create your first film roll to start tracking your analog photography journey."
+                        actionLabel="Create Film Roll"
+                        onAction={() => setShowCreateDialog(true)}
+                    />
                 ) : (
                     <>
                         <Box sx={{ mb: 3 }}>
@@ -353,18 +331,11 @@ export const FilmRollListScreen: React.FC<FilmRollListScreenProps> = ({
                 maxWidth="sm"
                 fullWidth
             >
-                <DialogTitle>
-                    <Stack direction={'row'} justifyContent="space-between" spacing={1}>
-                        <Typography variant="h6">Create New Film Roll</Typography>
-                        <IconButton
-                            size="small"
-                            onClick={() => setShowCreateDialog(false)}
-                            sx={{ mt: -0.5 }}
-                        >
-                            <Close />
-                        </IconButton>
-                    </Stack>
-                </DialogTitle>
+                <DialogHeader
+                    title="Create New Film Roll"
+                    icon={<PhotoLibrary />}
+                    onClose={() => setShowCreateDialog(false)}
+                />
                 <DialogContent sx={{ p: 0 }}>
                     <SetupScreen
                         cameras={cameras}
@@ -375,45 +346,24 @@ export const FilmRollListScreen: React.FC<FilmRollListScreenProps> = ({
             </Dialog>
 
             {/* Delete Confirmation Dialog */}
-            <Dialog
+            <ConfirmationDialog
                 open={!!filmRollToDelete}
-                onClose={() => setFilmRollToDelete(null)}
-            >
-                <DialogTitle>Delete Film Roll</DialogTitle>
-                <DialogContent>
-                    <Alert severity="warning" sx={{ mb: 2 }}>
-                        This action cannot be undone!
-                    </Alert>
-                    <Typography>
-                        Are you sure you want to delete "{filmRollToDelete?.name}"?
-                        This will also delete all {getFilmRollStats(filmRollToDelete || {} as FilmRoll).exposureCount} exposures.
-                    </Typography>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setFilmRollToDelete(null)}>
-                        Cancel
-                    </Button>
-                    <Button onClick={handleDeleteConfirm} color="error" variant="contained">
-                        Delete
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                title="Delete Film Roll"
+                message={`Are you sure you want to delete "${filmRollToDelete?.name}"? This will also delete all ${getFilmRollStats(filmRollToDelete || {} as FilmRoll).exposureCount} exposures.`}
+                warningText="This action cannot be undone!"
+                confirmText="Delete"
+                severity="error"
+                onConfirm={handleDeleteConfirm}
+                onCancel={() => setFilmRollToDelete(null)}
+            />
 
             {/* Action Menu */}
-            <Menu
+            <EntityContextMenu
                 anchorEl={menuAnchor}
-                open={Boolean(menuAnchor)}
                 onClose={handleMenuClose}
-            >
-                <MenuItem onClick={handleEditClick}>
-                    <Edit sx={{ mr: 1 }} />
-                    Edit Film Roll
-                </MenuItem>
-                <MenuItem onClick={handleDeleteClick} sx={{ color: 'error.main' }}>
-                    <Delete sx={{ mr: 1 }} />
-                    Delete Film Roll
-                </MenuItem>
-            </Menu>
+                onEdit={handleEditClick}
+                onDelete={handleDeleteClick}
+            />
 
             {/* Edit Film Roll Dialog */}
             <Dialog
@@ -422,18 +372,11 @@ export const FilmRollListScreen: React.FC<FilmRollListScreenProps> = ({
                 maxWidth="sm"
                 fullWidth
             >
-                <DialogTitle>
-                    <Stack direction={'row'} justifyContent="space-between" spacing={1}>
-                        <Typography variant="h6">Edit Film Roll</Typography>
-                        <IconButton
-                            size="small"
-                            onClick={() => setEditingFilmRoll(null)}
-                            sx={{ mt: -0.5 }}
-                        >
-                            <Close />
-                        </IconButton>
-                    </Stack>
-                </DialogTitle>
+                <DialogHeader
+                    title="Edit Film Roll"
+                    icon={<PhotoLibrary />}
+                    onClose={() => setEditingFilmRoll(null)}
+                />
                 <DialogContent sx={{ p: 0 }}>
                     <SetupScreen
                         cameras={cameras}

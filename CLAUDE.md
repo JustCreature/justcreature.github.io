@@ -11,7 +11,7 @@ Film Photography Tracker is a Progressive Web App (PWA) for tracking film photog
 When completing work on a feature or making significant changes:
 
 ### Completed Features
-1. **Document the feature** in `docs/features/done_F-{n}.md` where `n` is the next sequential number
+1. **Document the feature** in `docs/features/done_F-{n}.md` where `n` matches the original plan number
 2. **Include in the documentation:**
    - Feature overview and key components
    - Technical details (files changed, new APIs, data models)
@@ -20,7 +20,7 @@ When completing work on a feature or making significant changes:
    - Commits included
    - Migration notes (if applicable)
    - Future enhancement ideas
-3. **Naming convention:** `done_F-1.md`, `done_F-2.md`, etc.
+3. **Naming convention:** `done_F-1.md`, `done_F-6.md`, etc. (keeps original plan number)
 4. **Delete task plans** from `docs/tasks/todo/` once implemented
 
 ### Planned Features
@@ -32,14 +32,150 @@ When completing work on a feature or making significant changes:
    - Benefits and trade-offs
    - Effort estimate
 3. **Naming convention:** `plan_F-5.md`, `plan_F-6.md`, etc.
-4. **Move to done_** once implemented (renumber if needed)
+4. **Move to done_F-{n}.md** once implemented (KEEP THE SAME NUMBER)
 
 **IMPORTANT for Claude Code plan mode:** When entering plan mode, ALWAYS write the final plan to `docs/tasks/todo/plan_F-{n}.md` (NOT to `~/.claude/plans/`). This ensures plans are tracked in the repository.
 
 ### Feature Numbering
-- Start from F-1 and increment sequentially
+**IMPORTANT:** Feature numbers are assigned when planned and stay with the feature forever:
+- Numbers reflect when features were **planned**, not when they were **implemented**
+- `plan_F-6.md` becomes `done_F-6.md` (NOT `done_F-2.md`)
+- Features can be implemented in any order
+- Gaps in numbering are expected (e.g., `done_F-1.md`, `done_F-6.md`, `plan_F-2.md`, `plan_F-5.md`)
+- Never renumber features - each feature keeps its original plan number
 - Completed features use `done_` prefix
 - Planned features use `plan_` prefix
+
+**Example:**
+- `plan_F-2.md` → implemented later → becomes `done_F-2.md`
+- `plan_F-6.md` → implemented first → becomes `done_F-6.md`
+- Result: `docs/features/` has `done_F-1.md`, `done_F-6.md` (F-2 through F-5 still planned or not yet created)
+
+## Coding Best Practices
+
+### Component Composition
+
+**DO:**
+- ✅ Use shared components from `src/components/common/` for repeated patterns
+- ✅ Check if a shared component exists before creating duplicate UI (DialogHeader, EmptyStateDisplay, ConfirmationDialog, etc.)
+- ✅ Use selector components (LensSelector, ApertureSelector, ShutterSpeedSelector) instead of TextField with select prop
+- ✅ Extract components when the same pattern appears 2+ times
+
+**DON'T:**
+- ❌ Copy-paste dialog headers, empty states, or confirmation dialogs
+- ❌ Use window.confirm() or window.alert() - use ConfirmationDialog instead
+- ❌ Create new selector components without checking common/ directory first
+- ❌ Over-engineer - don't extract components for patterns that appear only 1-2 times and not very common, or can't be easily extracted
+
+### MUI Component Accessibility
+
+When creating new MUI Select components:
+
+**ALWAYS:**
+```typescript
+import { useId } from 'react';
+
+const MySelector = () => {
+  const id = useId(); // Generate unique ID for accessibility
+
+  return (
+    <FormControl fullWidth>
+      <InputLabel id={`${id}-label`}>My Label</InputLabel>
+      <Select
+        labelId={`${id}-label`}  // Connect to InputLabel
+        id={id}                   // Unique ID for Select
+        value={value}
+        label="My Label"          // Must match InputLabel text
+        onChange={handleChange}
+      >
+        {/* MenuItems */}
+      </Select>
+    </FormControl>
+  );
+};
+```
+
+**Why:** Properly connecting InputLabel and Select via `labelId` ensures:
+- Screen readers can announce the label
+- Tests using `getByLabel()` work correctly
+- Material-UI styling and animations work properly
+
+### TypeScript Imports
+
+Use `type` keyword for type-only imports (required by verbatimModuleSyntax):
+
+```typescript
+// ✅ CORRECT
+import type { Lens, Camera } from '../types';
+import { type ReactNode } from 'react';
+
+// ❌ WRONG
+import { Lens, Camera } from '../types';
+import { ReactNode } from 'react';
+```
+
+### Confirmation Dialogs
+
+**DO:**
+```typescript
+// ✅ Use ConfirmationDialog component
+<ConfirmationDialog
+  open={deleteConfirmOpen}
+  title="Delete Camera"
+  message={`Are you sure you want to delete "${camera.name}"?`}
+  warningText="This action cannot be undone."
+  confirmText="Delete"
+  severity="error"
+  onConfirm={handleDelete}
+  onCancel={() => setDeleteConfirmOpen(false)}
+/>
+```
+
+**DON'T:**
+```typescript
+// ❌ Don't use window.confirm()
+const confirmed = window.confirm('Delete camera?');
+if (confirmed) handleDelete();
+```
+
+### Empty States
+
+**DO:**
+```typescript
+// ✅ Use EmptyStateDisplay component
+<EmptyStateDisplay
+  icon={<CameraAlt sx={{ fontSize: 80 }} />}
+  title="No Cameras Added Yet"
+  description="Add your camera equipment to track metadata."
+  actionLabel="Add Camera"
+  onAction={() => setShowDialog(true)}
+/>
+```
+
+**DON'T:**
+```typescript
+// ❌ Don't create custom empty state markup
+<Box display="flex" flexDirection="column" ...>
+  <CameraAlt sx={{ fontSize: 80, color: 'text.secondary' }} />
+  <Typography variant="h5">No Cameras Yet</Typography>
+  <Button onClick={...}>Add Camera</Button>
+</Box>
+```
+
+### Code Duplication
+
+**When you see the same pattern 2+ times:**
+1. Check if a shared component exists in `src/components/common/`
+2. If not, consider extracting to a new shared component
+3. Update CLAUDE.md to document the new pattern
+4. Avoid over-engineering - some duplication is acceptable for 1-2 instances
+
+**Red flags that indicate duplication:**
+- Multiple `DialogTitle` with `IconButton` + `Close` icon
+- Multiple empty state implementations with similar structure
+- Multiple FormControl + InputLabel + Select blocks
+- Repeated Edit/Delete context menus
+- Copy-pasted confirmation dialogs
 
 ## Key Commands
 
@@ -102,15 +238,25 @@ The Python script reads exported JSON metadata and applies it to scanned TIF fil
 ```
 src/
 ├── components/                    # React components
+│   ├── common/                   # Shared/reusable components
+│   │   ├── DialogHeader.tsx     # Standard dialog header with close button
+│   │   ├── EmptyStateDisplay.tsx # Empty state pattern (icon, title, description, action)
+│   │   ├── ConfirmationDialog.tsx # Reusable confirmation dialog
+│   │   ├── EntityContextMenu.tsx # Edit/Delete context menu
+│   │   ├── LensSelector.tsx     # Lens selection dropdown
+│   │   ├── ApertureSelector.tsx # Aperture selection (with maxAperture filtering)
+│   │   └── ShutterSpeedSelector.tsx # Shutter speed selection
 │   ├── MainScreen.tsx            # Tabbed interface (Film Rolls & Cameras tabs)
 │   ├── FilmRollListScreen.tsx    # Film roll list and management
 │   ├── CameraManagementScreen.tsx # Camera equipment management
+│   ├── LensManagementScreen.tsx  # Lens library management
 │   ├── SetupScreen.tsx           # Film roll configuration
 │   ├── CameraScreen.tsx          # Photo capture interface
 │   ├── GalleryScreen.tsx         # Exposure list view with import/export
 │   ├── DetailsScreen.tsx         # Individual exposure details/editing
 │   ├── SettingsModal.tsx         # App settings (Google Drive, etc.)
-│   └── ItemCard.tsx              # Reusable card component
+│   ├── ItemCard.tsx              # Reusable card component
+│   └── FocalLengthSlider.tsx     # Focal length slider for zoom lenses
 ├── utils/                        # Utility functions
 │   ├── storage.ts               # Storage facade (async API wrapper)
 │   ├── indexedDBStorage.ts      # IndexedDB implementation with migration
@@ -123,6 +269,39 @@ src/
 ```
 
 ## Architecture
+
+### Shared Components Pattern
+
+The app uses a **common components library** (`src/components/common/`) to eliminate code duplication and ensure consistency:
+
+**Core UI Components:**
+- **DialogHeader** - Standard dialog header with title, icon, and close button. Used in all modal dialogs for consistent UX.
+- **EmptyStateDisplay** - Empty state pattern with icon, title, description, and action button. Used in all management screens.
+- **ConfirmationDialog** - Reusable confirmation dialog with customizable severity. Replaces window.confirm() for better UX.
+- **EntityContextMenu** - Standard Edit/Delete context menu for entity management screens.
+
+**Form Components:**
+- **LensSelector** - Lens selection dropdown with proper MUI accessibility (labelId/id via useId())
+- **ApertureSelector** - Aperture selection with automatic filtering based on lens maxAperture
+- **ShutterSpeedSelector** - Shutter speed selection dropdown
+
+**Key Principles:**
+- All MUI Select components use `useId()` hook to properly connect InputLabel and Select for accessibility
+- Components accept standard props (label, fullWidth, required) for flexibility
+- Type imports use `type` keyword for TypeScript's verbatimModuleSyntax compliance
+- Components are self-contained with no external state dependencies
+
+**Usage Example:**
+```typescript
+import { ApertureSelector } from './common/ApertureSelector';
+
+<ApertureSelector
+  value={formData.maxAperture}
+  onChange={(value) => setFormData(prev => ({ ...prev, maxAperture: value }))}
+  label="Maximum Aperture (widest)"
+  maxAperture={currentLens?.maxAperture} // Optional: filters available apertures
+/>
+```
 
 ### Storage System
 
@@ -290,21 +469,6 @@ Use `navigateToScreen(screen, exposure?)` helper in App.tsx which updates both c
 - **Geolocation**: All modern browsers
 - **Web Share API**: Mobile browsers (Chrome Android 61+, Safari iOS 12.2+)
 
-## Google Drive Integration (Optional)
-
-The app has placeholder code for Google Drive integration but it requires setup:
-
-1. **Create Google Cloud Project** at console.cloud.google.com
-2. **Enable Google Drive API** in APIs & Services > Library
-3. **Create Credentials** (API Key restricted to Google Drive API)
-4. **Add Google APIs JavaScript Client** to index.html:
-   ```html
-   <script src="https://apis.google.com/js/api.js"></script>
-   ```
-5. **Implement authentication flow** in `src/utils/googleDriveService.ts`
-6. **Handle OAuth redirect** in App.tsx (code present but disabled)
-
-**Note**: Without Google Drive setup, all import/export uses local file downloads.
 
 ## Deployment
 
@@ -317,9 +481,3 @@ npx netlify deploy --prod --dir=dist      # Deploy to Netlify
 ```
 
 PWA manifest and service worker are automatically generated during build.
-
-## Planned Features (Currently Disabled)
-
-- Google Drive sync (SyncManager commented out in App.tsx)
-- Automatic cloud backup (awaiting storage migration completion)
-- OAuth authentication flow (placeholder exists in App.tsx)

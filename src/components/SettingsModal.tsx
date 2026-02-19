@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
     Dialog,
-    DialogTitle,
     DialogContent,
     DialogActions,
     Button,
@@ -13,17 +12,16 @@ import {
     Alert,
     Divider,
     Chip,
-    Stack,
-    IconButton
+    Stack
 } from '@mui/material';
 import {
     CloudSync,
     CheckCircle,
     Error,
-    Warning,
-    Close
+    Warning
 } from '@mui/icons-material';
 import type { AppSettings } from '../types';
+import { DialogHeader } from './common/DialogHeader';
 
 interface SettingsModalProps {
     open: boolean;
@@ -188,17 +186,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             maxWidth="md"
             fullWidth
         >
-            <DialogTitle>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                    <Box display="flex" alignItems="center" gap={1}>
-                        <CloudSync />
-                        <Typography variant="h6">Settings</Typography>
-                    </Box>
-                    <IconButton onClick={handleCancel} size="small">
-                        <Close />
-                    </IconButton>
-                </Box>
-            </DialogTitle>
+            <DialogHeader
+                title="Settings"
+                icon={<CloudSync />}
+                onClose={handleCancel}
+            />
 
             <DialogContent>
                 <Stack spacing={3} sx={{ mt: 1 }}>

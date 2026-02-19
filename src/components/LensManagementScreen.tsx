@@ -8,26 +8,25 @@ import {
     Toolbar,
     Button,
     Dialog,
-    DialogTitle,
     DialogContent,
     DialogActions,
     TextField,
     Stack,
     IconButton,
-    Menu,
-    MenuItem,
     Alert
 } from '@mui/material';
 import {
     Add,
-    Edit,
-    Delete,
     MoreVert,
     CameraEnhance
 } from '@mui/icons-material';
 import type { Lens } from '../types';
-import { APERTURE_VALUES } from '../types';
 import { ItemCard } from './ItemCard';
+import { EmptyStateDisplay } from './common/EmptyStateDisplay';
+import { DialogHeader } from './common/DialogHeader';
+import { ConfirmationDialog } from './common/ConfirmationDialog';
+import { EntityContextMenu } from './common/EntityContextMenu';
+import { ApertureSelector } from './common/ApertureSelector';
 
 interface LensManagementScreenProps {
     lenses: Lens[];
@@ -46,6 +45,8 @@ export const LensManagementScreen: React.FC<LensManagementScreenProps> = ({
     const [editingLens, setEditingLens] = useState<Lens | null>(null);
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
     const [selectedLens, setSelectedLens] = useState<Lens | null>(null);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [lensToDelete, setLensToDelete] = useState<Lens | null>(null);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -183,13 +184,17 @@ export const LensManagementScreen: React.FC<LensManagementScreenProps> = ({
     };
 
     const handleDeleteClick = (lens: Lens) => {
-        const confirmed = window.confirm(
-            `Delete lens "${lens.name}"?\n\nThis will not affect existing exposures using this lens.`
-        );
-        if (confirmed) {
-            onLensDeleted(lens.id);
-        }
+        setLensToDelete(lens);
+        setDeleteConfirmOpen(true);
         setMenuAnchor(null);
+    };
+
+    const confirmDelete = () => {
+        if (lensToDelete) {
+            onLensDeleted(lensToDelete.id);
+        }
+        setDeleteConfirmOpen(false);
+        setLensToDelete(null);
     };
 
     const handleMenuClick = (event: React.MouseEvent<HTMLElement>, lens: Lens) => {
@@ -223,30 +228,13 @@ export const LensManagementScreen: React.FC<LensManagementScreenProps> = ({
 
             <Container maxWidth="lg" sx={{ py: 3 }}>
                 {lenses.length === 0 ? (
-                    <Box
-                        display="flex"
-                        flexDirection="column"
-                        alignItems="center"
-                        justifyContent="center"
-                        minHeight="60vh"
-                        textAlign="center"
-                    >
-                        <CameraEnhance sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
-                        <Typography variant="h5" gutterBottom color="text.secondary">
-                            No Lenses Added Yet
-                        </Typography>
-                        <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 400 }}>
-                            Add your lenses to track focal lengths and apertures for each shot.
-                        </Typography>
-                        <Button
-                            variant="contained"
-                            startIcon={<Add />}
-                            onClick={() => setShowDialog(true)}
-                            size="large"
-                        >
-                            Add Lens
-                        </Button>
-                    </Box>
+                    <EmptyStateDisplay
+                        icon={<CameraEnhance sx={{ fontSize: 80 }} />}
+                        title="No Lenses Added Yet"
+                        description="Add your lenses to track focal lengths and apertures for each shot."
+                        actionLabel="Add Lens"
+                        onAction={() => setShowDialog(true)}
+                    />
                 ) : (
                     <>
                         <Box sx={{ mb: 3 }}>
@@ -332,9 +320,15 @@ export const LensManagementScreen: React.FC<LensManagementScreenProps> = ({
                 maxWidth="sm"
                 fullWidth
             >
-                <DialogTitle>
-                    {editingLens ? 'Edit Lens' : 'Add New Lens'}
-                </DialogTitle>
+                <DialogHeader
+                    title={editingLens ? 'Edit Lens' : 'Add New Lens'}
+                    icon={<CameraEnhance />}
+                    onClose={() => {
+                        setShowDialog(false);
+                        setEditingLens(null);
+                        resetForm();
+                    }}
+                />
                 <DialogContent>
                     <Stack spacing={3} sx={{ pt: 1 }}>
                         {validationError && (
@@ -352,20 +346,11 @@ export const LensManagementScreen: React.FC<LensManagementScreenProps> = ({
                             required
                         />
 
-                        <TextField
-                            fullWidth
-                            select
-                            label="Maximum Aperture (widest)"
+                        <ApertureSelector
                             value={formData.maxAperture}
-                            onChange={(e) => setFormData(prev => ({ ...prev, maxAperture: e.target.value }))}
-                            required
-                        >
-                            {APERTURE_VALUES.map((value) => (
-                                <MenuItem key={value} value={value}>
-                                    {value}
-                                </MenuItem>
-                            ))}
-                        </TextField>
+                            onChange={(value) => setFormData(prev => ({ ...prev, maxAperture: value }))}
+                            label="Maximum Aperture (widest)"
+                        />
 
                         <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>
                             Focal Length (for prime lenses)
@@ -453,20 +438,27 @@ export const LensManagementScreen: React.FC<LensManagementScreenProps> = ({
             </Dialog>
 
             {/* Actions Menu */}
-            <Menu
+            <EntityContextMenu
                 anchorEl={menuAnchor}
-                open={Boolean(menuAnchor)}
                 onClose={handleMenuClose}
-            >
-                <MenuItem onClick={() => selectedLens && handleEditClick(selectedLens)}>
-                    <Edit sx={{ mr: 1 }} />
-                    Edit
-                </MenuItem>
-                <MenuItem onClick={() => selectedLens && handleDeleteClick(selectedLens)}>
-                    <Delete sx={{ mr: 1 }} />
-                    Delete
-                </MenuItem>
-            </Menu>
+                onEdit={() => selectedLens && handleEditClick(selectedLens)}
+                onDelete={() => selectedLens && handleDeleteClick(selectedLens)}
+            />
+
+            {/* Delete Confirmation Dialog */}
+            <ConfirmationDialog
+                open={deleteConfirmOpen}
+                title="Delete Lens"
+                message={`Are you sure you want to delete "${lensToDelete?.name}"?`}
+                warningText="This will not affect existing exposures using this lens."
+                confirmText="Delete"
+                severity="error"
+                onConfirm={confirmDelete}
+                onCancel={() => {
+                    setDeleteConfirmOpen(false);
+                    setLensToDelete(null);
+                }}
+            />
         </Box>
     );
 };
