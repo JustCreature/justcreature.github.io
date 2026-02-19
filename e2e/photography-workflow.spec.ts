@@ -16,7 +16,7 @@ test.describe('Photography Workflow', () => {
         await expect(filmTrackerPage.galleryButton).toBeVisible();
 
         // Check initial state
-        await expect(filmTrackerPage.page.getByText(/1\/36.*left/)).toBeVisible();
+        await expect(filmTrackerPage.page.getByText(/1\/36.*remaining/)).toBeVisible();
 
         // Access camera settings
         await filmTrackerPage.apertureChip.click();

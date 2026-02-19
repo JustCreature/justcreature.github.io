@@ -30,14 +30,15 @@ import { camera, geolocation, fileUtils } from '../utils/camera';
 import type { FilmRoll, Exposure, ExposureSettings, Lens } from '../types';
 import { APERTURE, APERTURE_VALUES, SHUTTER_SPEED, SHUTTER_SPEED_VALUES, EI_VALUES } from '../types';
 import { FocalLengthSlider } from './FocalLengthSlider';
+import { colors } from '../theme';
 
-// Add CSS for shutter effect animation
+// Add CSS for enhanced shutter effect animation
 const shutterEffectStyles = `
 @keyframes shutterEffect {
-    0% { opacity: 0; }
-    10% { opacity: 1; }
-    90% { opacity: 1; }
-    100% { opacity: 0; }
+    0% { opacity: 0; transform: scaleY(0); }
+    5% { opacity: 1; transform: scaleY(1); }
+    95% { opacity: 1; transform: scaleY(1); }
+    100% { opacity: 0; transform: scaleY(0); }
 }
 `;
 
@@ -347,11 +348,32 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
                         </IconButton>
                     )}
                     <Box>
-                        <Typography variant="h6" fontWeight="bold">
+                        <Typography
+                            variant="h6"
+                            sx={{
+                                fontWeight: 600,
+                                color: colors.charcoal,
+                                mb: 0.5,
+                            }}
+                        >
                             {filmRoll.name}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                            {currentExposureNumber}/{filmRoll.totalExposures} - {exposuresLeft} left
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                color: colors.silverGray,
+                                fontVariantNumeric: 'tabular-nums',
+                                letterSpacing: '0.02em',
+                            }}
+                        >
+                            <Box component="span" sx={{ fontWeight: 600, color: colors.deepAmber }}>
+                                {currentExposureNumber}
+                            </Box>
+                            /{filmRoll.totalExposures}
+                            <Box component="span" sx={{ mx: 1, color: colors.coolGray }}>•</Box>
+                            <Box component="span" sx={{ fontWeight: 500 }}>
+                                {exposuresLeft} remaining
+                            </Box>
                         </Typography>
                     </Box>
                 </Box>
@@ -360,8 +382,23 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
                 </IconButton>
             </Box>
 
-            {/* Camera View */}
-            <Paper elevation={3} sx={{ flex: 1, position: 'relative', overflow: 'hidden', mb: 2 }}>
+            {/* Camera View - Viewfinder Frame */}
+            <Paper
+                elevation={0}
+                sx={{
+                    flex: 1,
+                    position: 'relative',
+                    overflow: 'hidden',
+                    mb: 2,
+                    border: `3px solid ${colors.charcoal}`,
+                    borderRadius: 2,
+                    boxShadow: `
+                        inset 0 0 0 1px rgba(255, 255, 255, 0.3),
+                        0 4px 12px rgba(0, 0, 0, 0.2)
+                    `,
+                    background: colors.charcoal,
+                }}
+            >
                 {isCameraActive ? (
                     <>
                         <video
@@ -375,7 +412,7 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
                                 objectFit: 'cover'
                             }}
                         />
-                        {/* Shutter Effect Overlay */}
+                        {/* Enhanced Shutter Effect Overlay */}
                         {showShutterEffect && (
                             <Box
                                 sx={{
@@ -384,9 +421,10 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
                                     left: 0,
                                     width: '100%',
                                     height: '100%',
-                                    backgroundColor: 'black',
+                                    backgroundColor: colors.charcoal,
                                     zIndex: 10,
-                                    animation: 'shutterEffect 500ms ease-in-out'
+                                    animation: 'shutterEffect 400ms cubic-bezier(0.4, 0, 0.2, 1)',
+                                    transformOrigin: 'center',
                                 }}
                             />
                         )}
@@ -448,61 +486,147 @@ getUserMedia: ${!!navigator.mediaDevices?.getUserMedia}
                             variant="filled"
                             color="primary"
                             size="medium"
-                            sx={{ fontWeight: 'bold' }}
+                            sx={{
+                                fontWeight: 600,
+                                fontSize: '0.9375rem',
+                                py: 2.5,
+                                px: 2,
+                                bgcolor: colors.deepAmber,
+                                color: 'white',
+                                '&:hover': {
+                                    bgcolor: '#b45309',
+                                    boxShadow: '0 0 0 3px rgba(217, 119, 6, 0.2)',
+                                },
+                            }}
                         />
-                        <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                ml: 1.5,
+                                color: colors.silverGray,
+                                fontSize: '0.75rem',
+                                letterSpacing: '0.03em',
+                            }}
+                        >
                             Click to change lens
                         </Typography>
                     </Box>
                 ) : null;
             })()}
 
-            {/* Settings Chips */}
+            {/* Settings Chips - Technical Display */}
             <Stack direction="row" spacing={1} mb={2} flexWrap="wrap" gap={1}>
                 {!filmRoll.currentLensId && (
                     <Chip
                         label="+ Select Lens"
                         onClick={() => setShowLensChangeDialog(true)}
                         variant="outlined"
-                        size="small"
-                        color="default"
+                        size="medium"
+                        sx={{
+                            borderColor: colors.deepAmber,
+                            color: colors.deepAmber,
+                            fontWeight: 600,
+                            '&:hover': {
+                                bgcolor: 'rgba(217, 119, 6, 0.08)',
+                                borderColor: colors.deepAmber,
+                            },
+                        }}
                     />
                 )}
                 <Chip
-                    label={`${currentSettings.aperture}`}
+                    label={currentSettings.aperture}
                     onClick={openSettingsDialog}
-                    variant="outlined"
-                    size="small"
+                    variant="filled"
+                    size="medium"
+                    sx={{
+                        bgcolor: colors.coolGray,
+                        color: colors.charcoal,
+                        fontVariantNumeric: 'tabular-nums',
+                        fontWeight: 600,
+                        fontSize: '0.875rem',
+                        '&:hover': {
+                            bgcolor: '#e5e7eb',
+                            boxShadow: `0 0 0 2px ${colors.deepAmber}`,
+                        },
+                    }}
                 />
                 <Chip
-                    label={`${currentSettings.shutterSpeed}`}
+                    label={currentSettings.shutterSpeed}
                     onClick={openSettingsDialog}
-                    variant="outlined"
-                    size="small"
+                    variant="filled"
+                    size="medium"
+                    sx={{
+                        bgcolor: colors.coolGray,
+                        color: colors.charcoal,
+                        fontVariantNumeric: 'tabular-nums',
+                        fontWeight: 600,
+                        fontSize: '0.875rem',
+                        '&:hover': {
+                            bgcolor: '#e5e7eb',
+                            boxShadow: `0 0 0 2px ${colors.deepAmber}`,
+                        },
+                    }}
                 />
                 {currentSettings.ei && (
                     <Chip
                         label={`EI ${currentSettings.ei}`}
                         onClick={openSettingsDialog}
-                        variant="outlined"
-                        size="small"
-                        color="secondary"
+                        variant="filled"
+                        size="medium"
+                        sx={{
+                            bgcolor: colors.seleniumGray,
+                            color: 'white',
+                            fontVariantNumeric: 'tabular-nums',
+                            fontWeight: 600,
+                            fontSize: '0.875rem',
+                            '&:hover': {
+                                bgcolor: '#1f2937',
+                                boxShadow: `0 0 0 2px ${colors.deepAmber}`,
+                            },
+                        }}
                     />
                 )}
                 {currentSettings.focalLength && (
                     <Chip
                         label={`${currentSettings.focalLength}mm`}
                         onClick={openSettingsDialog}
-                        variant="outlined"
-                        size="small"
+                        variant="filled"
+                        size="medium"
+                        sx={{
+                            bgcolor: colors.coolGray,
+                            color: colors.charcoal,
+                            fontVariantNumeric: 'tabular-nums',
+                            fontWeight: 600,
+                            fontSize: '0.875rem',
+                            '&:hover': {
+                                bgcolor: '#e5e7eb',
+                                boxShadow: `0 0 0 2px ${colors.deepAmber}`,
+                            },
+                        }}
                     />
                 )}
                 <Chip
                     label="Info"
                     onClick={openSettingsDialog}
-                    variant="outlined"
-                    size="small"
-                    color={currentSettings.additionalInfo ? "primary" : "default"}
+                    variant={currentSettings.additionalInfo ? "filled" : "outlined"}
+                    size="medium"
+                    sx={{
+                        ...(currentSettings.additionalInfo ? {
+                            bgcolor: colors.deepAmber,
+                            color: 'white',
+                            fontWeight: 600,
+                            '&:hover': {
+                                bgcolor: '#b45309',
+                            },
+                        } : {
+                            borderColor: colors.silverGray,
+                            color: colors.silverGray,
+                            '&:hover': {
+                                borderColor: colors.charcoal,
+                                bgcolor: 'rgba(0, 0, 0, 0.04)',
+                            },
+                        }),
+                    }}
                 />
             </Stack>
 
@@ -522,10 +646,32 @@ getUserMedia: ${!!navigator.mediaDevices?.getUserMedia}
                     onClick={isCameraActive ? capturePhoto : () => setIsCameraActive(true)}
                     disabled={exposuresLeft <= 0}
                     sx={{
-                        fontSize: '1.5rem',
+                        width: 72,
+                        height: 72,
+                        bgcolor: colors.deepAmber,
+                        boxShadow: `
+                            0 4px 14px rgba(217, 119, 6, 0.4),
+                            0 0 0 3px white,
+                            0 0 0 5px ${colors.deepAmber}
+                        `,
+                        '&:hover': {
+                            bgcolor: '#b45309',
+                            boxShadow: `
+                                0 6px 20px rgba(217, 119, 6, 0.5),
+                                0 0 0 3px white,
+                                0 0 0 5px ${colors.deepAmber}
+                            `,
+                        },
+                        '&:active': {
+                            transform: 'scale(0.95)',
+                        },
                         '&:disabled': {
-                            backgroundColor: 'grey.300'
-                        }
+                            bgcolor: colors.coolGray,
+                            boxShadow: 'none',
+                        },
+                        '& .MuiSvgIcon-root': {
+                            fontSize: '2rem',
+                        },
                     }}
                 >
                     <PhotoCamera />
