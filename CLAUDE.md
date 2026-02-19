@@ -11,7 +11,7 @@ Film Photography Tracker is a Progressive Web App (PWA) for tracking film photog
 When completing work on a feature or making significant changes:
 
 ### Completed Features
-1. **Document the feature** in `docs/features/done_F-{n}.md` where `n` matches the original plan number
+1. **Document the feature** in `.llm/features/done_F-{n}.md` where `n` matches the original plan number
 2. **Include in the documentation:**
    - Feature overview and key components
    - Technical details (files changed, new APIs, data models)
@@ -21,10 +21,10 @@ When completing work on a feature or making significant changes:
    - Migration notes (if applicable)
    - Future enhancement ideas
 3. **Naming convention:** `done_F-1.md`, `done_F-6.md`, etc. (keeps original plan number)
-4. **Delete task plans** from `docs/tasks/todo/` once implemented
+4. **Delete task plans** from `.llm/tasks/todo/` once implemented
 
 ### Planned Features
-1. **Create plan** in `docs/tasks/todo/plan_F-{n}.md` for future features
+1. **Create plan** in `.llm/tasks/todo/plan_F-{n}.md` for future features
 2. **Include in the plan:**
    - Problem statement
    - Proposed solution
@@ -34,7 +34,7 @@ When completing work on a feature or making significant changes:
 3. **Naming convention:** `plan_F-5.md`, `plan_F-6.md`, etc.
 4. **Move to done_F-{n}.md** once implemented (KEEP THE SAME NUMBER)
 
-**IMPORTANT for Claude Code plan mode:** When entering plan mode, ALWAYS write the final plan to `docs/tasks/todo/plan_F-{n}.md` (NOT to `~/.claude/plans/`). This ensures plans are tracked in the repository.
+**IMPORTANT for Claude Code plan mode:** When entering plan mode, ALWAYS write the final plan to `.llm/tasks/todo/plan_F-{n}.md` (NOT to `~/.claude/plans/`). This ensures plans are tracked in the repository.
 
 ### Feature Numbering
 **IMPORTANT:** Feature numbers are assigned when planned and stay with the feature forever:
@@ -49,7 +49,7 @@ When completing work on a feature or making significant changes:
 **Example:**
 - `plan_F-2.md` → implemented later → becomes `done_F-2.md`
 - `plan_F-6.md` → implemented first → becomes `done_F-6.md`
-- Result: `docs/features/` has `done_F-1.md`, `done_F-6.md` (F-2 through F-5 still planned or not yet created)
+- Result: `.llm/features/` has `done_F-1.md`, `done_F-6.md` (F-2 through F-5 still planned or not yet created)
 
 ## Coding Best Practices
 
