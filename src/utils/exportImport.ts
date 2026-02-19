@@ -1,4 +1,4 @@
-import type { FilmRoll, Exposure, Lens } from '../types';
+import type { FilmRoll, Exposure, Lens, ExportDataWithImages, ExposureWithImageData } from '../types';
 import { fileUtils } from './camera';
 
 export interface ExportData {
@@ -28,6 +28,27 @@ export interface ExposureExportData {
     lensName?: string; // Denormalized for easier external use
     focalLength?: number;
 }
+
+// Helper function to estimate export file size
+const estimateExportSize = (filmRoll: FilmRoll, exposures: Exposure[]): number => {
+    const filmExposures = exposures.filter(e => e.filmRollId === filmRoll.id);
+    let totalSize = 0;
+
+    // Estimate base64 image sizes
+    filmExposures.forEach(exp => {
+        if (exp.imageData) {
+            // Base64 data URL format: data:image/jpeg;base64,<data>
+            // Extract just the base64 part to get accurate size
+            const base64Data = exp.imageData.split(',')[1] || '';
+            totalSize += base64Data.length;
+        }
+    });
+
+    // Add overhead for JSON structure (~5KB per exposure)
+    totalSize += filmExposures.length * 5000;
+
+    return totalSize;
+};
 
 export const exportUtils = {
     // Convert exposure data to export format
@@ -148,6 +169,67 @@ export const exportUtils = {
         }
     },
 
+    // Export JSON with embedded images
+    exportJsonWithImages: async (filmRoll: FilmRoll, exposures: Exposure[], lenses: Lens[]): Promise<void> => {
+        try {
+            const filmExposures = exposures.filter(e => e.filmRollId === filmRoll.id);
+
+            // Check file size and warn user if >10MB
+            const estimatedSize = estimateExportSize(filmRoll, exposures);
+            const sizeMB = (estimatedSize / (1024 * 1024)).toFixed(1);
+
+            if (estimatedSize > 10 * 1024 * 1024) {
+                const confirmDownload = window.confirm(
+                    `This export will be approximately ${sizeMB} MB.\n\n` +
+                    `Large files may take time to download, especially on mobile data.\n\n` +
+                    `Continue with export?`
+                );
+
+                if (!confirmDownload) {
+                    return;
+                }
+            }
+
+            // Prepare export data with embedded images
+            const exportExposures: ExposureWithImageData[] = filmExposures.map(exposure => {
+                const lens = lenses.find(l => l.id === exposure.lensId);
+
+                return {
+                    id: exposure.id,
+                    filmRollId: exposure.filmRollId,
+                    exposureNumber: exposure.exposureNumber,
+                    aperture: exposure.aperture,
+                    shutterSpeed: exposure.shutterSpeed,
+                    additionalInfo: exposure.additionalInfo,
+                    imageData: exposure.imageData, // Include base64 directly
+                    location: exposure.location,
+                    capturedAt: exposure.capturedAt.toISOString(),
+                    ei: exposure.ei,
+                    lensId: exposure.lensId,
+                    lensName: lens?.name,
+                    focalLength: exposure.focalLength
+                };
+            });
+
+            const exportData: ExportDataWithImages = {
+                filmRoll,
+                exposures: exportExposures,
+                exportedAt: new Date().toISOString(),
+                version: '2.0.0',
+                exportType: 'with-images'
+            };
+
+            const jsonString = JSON.stringify(exportData, null, 2);
+            const fileName = `${filmRoll.name.replace(/\s+/g, '_')}_with_images.json`;
+
+            fileUtils.downloadData(jsonString, fileName, 'application/json');
+
+        } catch (error) {
+            console.error('JSON with images export error:', error);
+            alert('Error during export. The file may be too large. Try exporting with separate files instead.');
+        }
+    },
+
     // Handle local folder import via file input
     importFromLocal: async (files: FileList): Promise<{ filmRoll: FilmRoll; exposures: Exposure[] } | null> => {
         try {
@@ -217,6 +299,60 @@ export const exportUtils = {
         } catch (error) {
             console.error('Import error:', error);
             alert('Error during import. Please check that you selected the correct files including metadata.json.');
+            return null;
+        }
+    },
+
+    // Import from JSON with embedded images
+    importJsonWithImages: async (file: File): Promise<{ filmRoll: FilmRoll; exposures: Exposure[] } | null> => {
+        try {
+            // Read the JSON file
+            const jsonText = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result as string);
+                reader.onerror = () => reject(new Error('Failed to read file'));
+                reader.readAsText(file);
+            });
+
+            const exportData: ExportDataWithImages = JSON.parse(jsonText);
+
+            // Validate format
+            if (exportData.exportType !== 'with-images') {
+                throw new Error('Invalid format. Please select a JSON file exported with the "JSON with Images" option.');
+            }
+
+            // Convert exposures back to internal format
+            const exposures: Exposure[] = exportData.exposures.map(exp => ({
+                id: exp.id,
+                filmRollId: exp.filmRollId,
+                exposureNumber: exp.exposureNumber,
+                aperture: exp.aperture,
+                shutterSpeed: exp.shutterSpeed,
+                additionalInfo: exp.additionalInfo,
+                imageData: exp.imageData,
+                location: exp.location,
+                capturedAt: new Date(exp.capturedAt),
+                ei: exp.ei,
+                lensId: exp.lensId,
+                focalLength: exp.focalLength
+            }));
+
+            // Prefix film roll name with [IMPORTED]
+            const filmRoll: FilmRoll = {
+                ...exportData.filmRoll,
+                name: `[IMPORTED] ${exportData.filmRoll.name}`,
+                createdAt: new Date(exportData.filmRoll.createdAt)
+            };
+
+            return { filmRoll, exposures };
+
+        } catch (error) {
+            console.error('Import error:', error);
+            if (error instanceof Error && error.message.includes('Invalid format')) {
+                alert(error.message);
+            } else {
+                alert('Error during import. Please check that you selected a valid JSON file exported with images.');
+            }
             return null;
         }
     }

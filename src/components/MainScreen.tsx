@@ -49,6 +49,7 @@ interface MainScreenProps {
     onFilmRollSelected: (filmRoll: FilmRoll) => void;
     onFilmRollCreated: (filmRoll: FilmRoll) => void;
     onFilmRollDeleted: (filmRollId: string) => void;
+    onDataImported?: (filmRoll: FilmRoll, exposures: Exposure[]) => void;
     onCameraCreated: (camera: Camera) => void;
     onCameraUpdated: (camera: Camera) => void;
     onCameraDeleted: (cameraId: string) => void;
@@ -66,6 +67,7 @@ export const MainScreen: React.FC<MainScreenProps> = ({
     onFilmRollSelected,
     onFilmRollCreated,
     onFilmRollDeleted,
+    onDataImported,
     onCameraCreated,
     onCameraUpdated,
     onCameraDeleted,
@@ -194,6 +196,7 @@ export const MainScreen: React.FC<MainScreenProps> = ({
                     onFilmRollSelected={onFilmRollSelected}
                     onFilmRollCreated={onFilmRollCreated}
                     onFilmRollDeleted={onFilmRollDeleted}
+                    onDataImported={onDataImported}
                 />
             </TabPanel>
 

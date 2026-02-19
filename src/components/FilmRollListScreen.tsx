@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
     Box,
     Container,
@@ -8,18 +8,29 @@ import {
     Toolbar,
     Dialog,
     DialogContent,
+    DialogActions,
     Card,
     CardMedia,
     CardContent,
     Chip,
     Stack,
-    IconButton
+    IconButton,
+    Button,
+    FormControl,
+    FormLabel,
+    RadioGroup,
+    FormControlLabel,
+    Radio,
+    TextField,
+    Paper
 } from '@mui/material';
 import {
     Add,
     PhotoLibrary,
     MoreVert,
-    CameraAlt
+    CameraAlt,
+    CloudDownload,
+    FolderOpen
 } from '@mui/icons-material';
 import type { FilmRoll, Exposure, Camera, Lens } from '../types';
 import { SetupScreen } from './SetupScreen';
@@ -28,6 +39,7 @@ import { EmptyStateDisplay } from './common/EmptyStateDisplay';
 import { DialogHeader } from './common/DialogHeader';
 import { ConfirmationDialog } from './common/ConfirmationDialog';
 import { EntityContextMenu } from './common/EntityContextMenu';
+import { exportUtils, googleDriveUtils } from '../utils/exportImport';
 
 interface FilmRollListScreenProps {
     filmRolls: FilmRoll[];
@@ -37,6 +49,7 @@ interface FilmRollListScreenProps {
     onFilmRollSelected: (filmRoll: FilmRoll) => void;
     onFilmRollCreated: (filmRoll: FilmRoll) => void;
     onFilmRollDeleted: (filmRollId: string) => void;
+    onDataImported?: (filmRoll: FilmRoll, exposures: Exposure[]) => void;
 }
 
 export const FilmRollListScreen: React.FC<FilmRollListScreenProps> = ({
@@ -46,13 +59,20 @@ export const FilmRollListScreen: React.FC<FilmRollListScreenProps> = ({
     exposures,
     onFilmRollSelected,
     onFilmRollCreated,
-    onFilmRollDeleted
+    onFilmRollDeleted,
+    onDataImported
 }) => {
     const [showCreateDialog, setShowCreateDialog] = useState(false);
+    const [showImportDialog, setShowImportDialog] = useState(false);
     const [editingFilmRoll, setEditingFilmRoll] = useState<FilmRoll | null>(null);
     const [filmRollToDelete, setFilmRollToDelete] = useState<FilmRoll | null>(null);
     const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
     const [selectedFilmRollId, setSelectedFilmRollId] = useState<string | null>(null);
+    const [importMethod, setImportMethod] = useState<'local' | 'googledrive' | 'jsonwithimages'>('local');
+    const [importFolderName, setImportFolderName] = useState('');
+    const [isProcessing, setIsProcessing] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const jsonWithImagesInputRef = useRef<HTMLInputElement>(null);
 
     const getFilmRollStats = (filmRoll: FilmRoll) => {
         const filmExposures = exposures.filter(e => e.filmRollId === filmRoll.id);
@@ -131,6 +151,127 @@ export const FilmRollListScreen: React.FC<FilmRollListScreenProps> = ({
         handleMenuClose();
     };
 
+    const handleImport = async () => {
+        setIsProcessing(true);
+        try {
+            let result: { filmRoll: FilmRoll; exposures: Exposure[] } | null = null;
+
+            if (importMethod === 'googledrive') {
+                if (!importFolderName.trim()) {
+                    alert('Please enter a folder name');
+                    setIsProcessing(false);
+                    return;
+                }
+                result = await googleDriveUtils.importFromGoogleDrive(importFolderName);
+            } else if (importMethod === 'jsonwithimages') {
+                // Trigger file input for JSON with images
+                jsonWithImagesInputRef.current?.click();
+                setIsProcessing(false);
+                return;
+            } else {
+                // Trigger file input for local multi-file import
+                fileInputRef.current?.click();
+                setIsProcessing(false);
+                return;
+            }
+
+            if (result) {
+                // Save imported data
+                await storage.saveFilmRoll(result.filmRoll);
+                for (const exposure of result.exposures) {
+                    await storage.saveExposure(exposure);
+                }
+
+                setShowImportDialog(false);
+                setImportFolderName('');
+
+                // Use onDataImported to update state and navigate to gallery
+                if (onDataImported) {
+                    onDataImported(result.filmRoll, result.exposures);
+                } else {
+                    // Fallback if callback not provided
+                    onFilmRollCreated(result.filmRoll);
+                    alert(`Successfully imported film roll: ${result.filmRoll.name}\nExposures: ${result.exposures.length}`);
+                }
+            }
+        } catch (error) {
+            console.error('Import failed:', error);
+            alert('Import failed. Please try again.');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files;
+        if (!files || files.length === 0) return;
+
+        setIsProcessing(true);
+        try {
+            const result = await exportUtils.importFromLocal(files);
+            if (result) {
+                // Save imported data
+                await storage.saveFilmRoll(result.filmRoll);
+                for (const exposure of result.exposures) {
+                    await storage.saveExposure(exposure);
+                }
+
+                setShowImportDialog(false);
+
+                // Use onDataImported to update state and navigate to gallery
+                if (onDataImported) {
+                    onDataImported(result.filmRoll, result.exposures);
+                } else {
+                    // Fallback if callback not provided
+                    onFilmRollCreated(result.filmRoll);
+                    alert(`Successfully imported film roll: ${result.filmRoll.name}\nExposures: ${result.exposures.length}`);
+                }
+            }
+        } catch (error) {
+            console.error('Import failed:', error);
+            alert('Import failed. Please try again.');
+        } finally {
+            setIsProcessing(false);
+        }
+
+        // Clear the input
+        event.target.value = '';
+    };
+
+    const handleJsonWithImagesFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        try {
+            const result = await exportUtils.importJsonWithImages(file);
+
+            if (result) {
+                // Save imported data
+                await storage.saveFilmRoll(result.filmRoll);
+                for (const exposure of result.exposures) {
+                    await storage.saveExposure(exposure);
+                }
+
+                setShowImportDialog(false);
+
+                // Use onDataImported to update state and navigate to gallery
+                if (onDataImported) {
+                    onDataImported(result.filmRoll, result.exposures);
+                } else {
+                    // Fallback if callback not provided
+                    onFilmRollCreated(result.filmRoll);
+                    alert(`Successfully imported film roll: ${result.filmRoll.name}\nExposures: ${result.exposures.length}`);
+                }
+            }
+        } catch (error) {
+            console.error('Import failed:', error);
+            alert('Import failed. Please check the file and try again.');
+        } finally {
+            // Reset file input
+            event.target.value = '';
+        }
+    };
+
     const sortedFilmRolls = [...filmRolls].sort((a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
@@ -143,6 +284,23 @@ export const FilmRollListScreen: React.FC<FilmRollListScreenProps> = ({
                     <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
                         Film Rolls
                     </Typography>
+                    <Button
+                        variant="outlined"
+                        startIcon={<CloudDownload />}
+                        onClick={() => setShowImportDialog(true)}
+                        disabled={isProcessing}
+                        sx={{
+                            mr: 2,
+                            color: 'inherit',
+                            borderColor: 'rgba(255, 255, 255, 0.5)',
+                            '&:hover': {
+                                borderColor: 'rgba(255, 255, 255, 0.8)',
+                                bgcolor: 'rgba(255, 255, 255, 0.1)',
+                            }
+                        }}
+                    >
+                        Import
+                    </Button>
                     <Typography variant="body2" color="inherit" sx={{ opacity: 0.8 }}>
                         {filmRolls.length} roll{filmRolls.length !== 1 ? 's' : ''}
                     </Typography>
@@ -386,6 +544,129 @@ export const FilmRollListScreen: React.FC<FilmRollListScreenProps> = ({
                     />
                 </DialogContent>
             </Dialog>
+
+            {/* Import Dialog */}
+            <Dialog open={showImportDialog} onClose={() => setShowImportDialog(false)} maxWidth="sm" fullWidth>
+                <DialogHeader
+                    title="Import Film Data"
+                    icon={<CloudDownload />}
+                    onClose={() => setShowImportDialog(false)}
+                />
+                <DialogContent>
+                    <Stack spacing={3} sx={{ pt: 1 }}>
+                        <FormControl component="fieldset">
+                            <FormLabel component="legend">Import Method</FormLabel>
+                            <RadioGroup
+                                value={importMethod}
+                                onChange={(e) => setImportMethod(e.target.value as 'local' | 'googledrive' | 'jsonwithimages')}
+                            >
+                                <FormControlLabel
+                                    value="local"
+                                    control={<Radio />}
+                                    label={
+                                        <Box>
+                                            <Typography variant="body2">Local Files</Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                                Select files from your device
+                                            </Typography>
+                                        </Box>
+                                    }
+                                />
+                                <FormControlLabel
+                                    value="jsonwithimages"
+                                    control={<Radio />}
+                                    label={
+                                        <Box>
+                                            <Typography variant="body2">Import JSON with Images</Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                                Select single JSON file with embedded images
+                                            </Typography>
+                                        </Box>
+                                    }
+                                />
+                                <FormControlLabel
+                                    value="googledrive"
+                                    control={<Radio />}
+                                    label={
+                                        <Box>
+                                            <Typography variant="body2">Google Drive</Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                                Import from Google Drive folder (requires setup)
+                                            </Typography>
+                                        </Box>
+                                    }
+                                />
+                            </RadioGroup>
+                            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                                Local Files: Select metadata.json + image files<br />
+                                JSON with Images: Select single JSON file with embedded images<br />
+                                Google Drive: Requires API setup
+                            </Typography>
+                        </FormControl>
+
+                        {importMethod !== 'jsonwithimages' && (
+                            <>
+                                {importMethod === 'googledrive' && (
+                                    <TextField
+                                        fullWidth
+                                        label="Folder Name"
+                                        value={importFolderName}
+                                        onChange={(e) => setImportFolderName(e.target.value)}
+                                        placeholder="Enter Google Drive folder name"
+                                        helperText="Name of the folder in Google Drive containing the exported data"
+                                    />
+                                )}
+
+                                {importMethod === 'local' && (
+                                    <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+                                        <Typography variant="body2" color="text.secondary">
+                                            Click "Import" to select the metadata.json file and all image files from your exported folder.
+                                        </Typography>
+                                    </Paper>
+                                )}
+                            </>
+                        )}
+
+                        {importMethod === 'jsonwithimages' && (
+                            <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+                                <Typography variant="body2" color="text.secondary">
+                                    Click "Import" to select a JSON file exported with the "JSON with Images" option.
+                                </Typography>
+                            </Paper>
+                        )}
+                    </Stack>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setShowImportDialog(false)}>Cancel</Button>
+                    <Button
+                        onClick={handleImport}
+                        variant="contained"
+                        disabled={isProcessing || (importMethod === 'googledrive' && !importFolderName.trim())}
+                        startIcon={importMethod === 'googledrive' ? <CloudDownload /> : <FolderOpen />}
+                    >
+                        {isProcessing ? 'Importing...' : 'Import'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Hidden file input for local import */}
+            <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept=".json,image/*"
+                style={{ display: 'none' }}
+                onChange={handleFileImport}
+            />
+
+            {/* Hidden file input for JSON-with-images import */}
+            <input
+                type="file"
+                ref={jsonWithImagesInputRef}
+                style={{ display: 'none' }}
+                accept="application/json"
+                onChange={handleJsonWithImagesFileSelect}
+            />
         </Box >
     );
 };

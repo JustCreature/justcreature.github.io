@@ -122,6 +122,34 @@ export const EI_VALUES = [
     2000, 2500, 3200, 4000, 5000, 6400
 ] as const;
 
+export interface ExportDataWithImages {
+    filmRoll: FilmRoll;
+    exposures: ExposureWithImageData[];
+    exportedAt: string;
+    version: string;
+    exportType: 'with-images';
+}
+
+export interface ExposureWithImageData {
+    id: string;
+    filmRollId: string;
+    exposureNumber: number;
+    aperture: string;
+    shutterSpeed: string;
+    additionalInfo: string;
+    imageData?: string; // Base64 data URL embedded directly
+    location?: {
+        latitude: number;
+        longitude: number;
+        address?: string;
+    };
+    capturedAt: string;
+    ei?: number;
+    lensId?: string;
+    lensName?: string;
+    focalLength?: number;
+}
+
 export interface AppState {
     currentFilmRoll: FilmRoll | null;
     filmRolls: FilmRoll[];

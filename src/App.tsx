@@ -428,6 +428,7 @@ function App() {
             onFilmRollSelected={handleFilmRollSelected}
             onFilmRollCreated={handleFilmRollCreated}
             onFilmRollDeleted={handleFilmRollDeleted}
+            onDataImported={handleDataImported}
             onCameraCreated={handleCameraCreated}
             onCameraUpdated={handleCameraUpdated}
             onCameraDeleted={handleCameraDeleted}
