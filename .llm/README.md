@@ -1,24 +1,20 @@
 # LLM Workflow Documentation
 
-This folder contains all documentation and artifacts related to working with AI assistants (Claude Code, etc.) on this project.
+Documentation for AI assistants working on this project.
 
 ## Structure
 
-- **CLAUDE.md** - Main instructions and guidelines for Claude Code when working with this codebase
-- **features/** - Completed feature documentation (`done_F-{n}.md`)
-- **tasks/todo/** - Planned feature specifications (`plan_F-{n}.md`)
+- **procedure/** - Reusable workflows
+- **features/** - Completed: `done_F-{n}.md`, `done_ISSUE-{n}.md`
+- **tasks/todo/** - Planned: `plan_F-{n}.md`, `plan_ISSUE-{n}.md`
 
-## Purpose
+## Workflows
 
-Separating LLM-specific documentation from general project documentation helps:
-- Keep AI workflow artifacts organized in one place
-- Make it clear which docs are for human developers vs AI assistants
-- Allow easy exclusion from deployments if needed
-- Maintain cleaner project structure
+Two separate workflows that never mix:
 
-## Feature Numbering
+**F-n (Manual):** `plan_F-6.md` → `done_F-6.md`
+**ISSUE-n (GitHub):** `plan_ISSUE-42.md` → `done_ISSUE-42.md`
 
-Features keep their original plan number throughout their lifecycle:
-- `plan_F-6.md` (planned) → `done_F-6.md` (implemented)
-- Numbers reflect when features were **planned**, not when they were **implemented**
-- Gaps in numbering are expected and normal
+- Numbers stay forever (F-6 never becomes F-5 or ISSUE-42)
+- Gaps in numbering expected
+- ISSUE-n imported via `procedure{source_github}` (label: `ready_for_dev`)
