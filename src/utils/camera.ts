@@ -86,7 +86,7 @@ export const camera = {
     },
 
     // Capture image from video stream with mobile optimizations
-    captureImage: (video: HTMLVideoElement): string => {
+    captureImage: (video: HTMLVideoElement, zoomFactor: number = 1.0): string => {
         const canvas = document.createElement('canvas');
 
         // Get actual video dimensions
@@ -97,14 +97,20 @@ export const camera = {
             throw new Error('Video not ready - invalid dimensions');
         }
 
+        // Calculate crop area for zoom
+        const cropWidth = videoWidth / zoomFactor;
+        const cropHeight = videoHeight / zoomFactor;
+        const cropX = (videoWidth - cropWidth) / 2;
+        const cropY = (videoHeight - cropHeight) / 2;
+
         // Limit canvas size for mobile performance
         const maxSize = 1280;
-        let canvasWidth = videoWidth;
-        let canvasHeight = videoHeight;
+        let canvasWidth = cropWidth;
+        let canvasHeight = cropHeight;
 
-        if (videoWidth > maxSize || videoHeight > maxSize) {
-            const aspectRatio = videoWidth / videoHeight;
-            if (videoWidth > videoHeight) {
+        if (cropWidth > maxSize || cropHeight > maxSize) {
+            const aspectRatio = cropWidth / cropHeight;
+            if (cropWidth > cropHeight) {
                 canvasWidth = maxSize;
                 canvasHeight = maxSize / aspectRatio;
             } else {
@@ -122,8 +128,12 @@ export const camera = {
         }
 
         try {
-            // Draw and scale the video frame
-            ctx.drawImage(video, 0, 0, canvasWidth, canvasHeight);
+            // Draw only the cropped/zoomed portion of the video frame
+            ctx.drawImage(
+                video,
+                cropX, cropY, cropWidth, cropHeight, // source rectangle (cropped area)
+                0, 0, canvasWidth, canvasHeight // destination rectangle (full canvas)
+            );
 
             // Use higher quality for smaller images, lower for larger ones
             const quality = canvasWidth * canvasHeight > 640 * 480 ? 0.7 : 0.8;

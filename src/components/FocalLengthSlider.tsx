@@ -31,7 +31,9 @@ export const FocalLengthSlider: React.FC<FocalLengthSliderProps> = ({
     const sliderMax = 200;
     let sliderStep = 1;
     let sliderDisabled = disabled || false;
-    let currentValue = value || 50;
+
+    // Use value directly, with fallback only for display purposes
+    let currentValue = value;
 
     // Constraints for zoom lens
     let zoomMin: number | undefined;
@@ -47,23 +49,27 @@ export const FocalLengthSlider: React.FC<FocalLengthSliderProps> = ({
         zoomMax = selectedLens.focalLengthMax!;
         sliderStep = 5;
 
-        // Ensure current value is within range and snapped to step
-        if (currentValue < zoomMin) currentValue = zoomMin;
-        if (currentValue > zoomMax) currentValue = zoomMax;
-        // Snap to nearest step
-        currentValue = Math.round(currentValue / sliderStep) * sliderStep;
+        // Ensure current value is within range and snapped to step (only if value exists)
+        if (currentValue !== undefined) {
+            if (currentValue < zoomMin) currentValue = zoomMin;
+            if (currentValue > zoomMax) currentValue = zoomMax;
+            // Snap to nearest step
+            currentValue = Math.round(currentValue / sliderStep) * sliderStep;
+        }
     }
-    // No lens selected: use default values (already set above)
+
+    // For slider display, use 50 as fallback if no value
+    const sliderValue = currentValue ?? 50;
 
     return (
         <Box>
             <Typography gutterBottom>
-                Focal Length: {currentValue || 'Not set'}mm
+                Focal Length: {currentValue ?? 'Not set'}mm
                 {isPrime && ' (Prime lens - fixed)'}
                 {isZoom && ` (${zoomMin}-${zoomMax}mm zoom)`}
             </Typography>
             <Slider
-                value={currentValue}
+                value={sliderValue}
                 onChange={(_, newValue) => {
                     let adjustedValue = newValue as number;
                     // Constrain to zoom range if zoom lens
@@ -100,21 +106,39 @@ export const FocalLengthSlider: React.FC<FocalLengthSliderProps> = ({
                 fullWidth
                 label="Manual Focal Length (mm)"
                 type="number"
-                value={currentValue || ''}
+                value={currentValue ?? ''}
                 onChange={(e) => {
-                    const inputValue = parseInt(e.target.value);
-                    if (isZoom && inputValue && zoomMin !== undefined && zoomMax !== undefined) {
+                    const inputStr = e.target.value;
+
+                    // Allow empty input (user is clearing the field)
+                    if (inputStr === '') {
+                        if (!isPrime) {
+                            onChange(undefined);
+                        }
+                        return;
+                    }
+
+                    const inputValue = parseInt(inputStr);
+
+                    // Ignore invalid numbers
+                    if (isNaN(inputValue)) {
+                        return;
+                    }
+
+                    if (isZoom && zoomMin !== undefined && zoomMax !== undefined) {
                         // Constrain to zoom range
                         const constrained = Math.max(zoomMin, Math.min(zoomMax, inputValue));
                         onChange(constrained);
                     } else if (!isPrime) {
                         // Allow any value if not a prime lens
-                        onChange(inputValue || undefined);
+                        onChange(inputValue);
                     }
                 }}
-                inputProps={{
-                    min: isZoom && zoomMin ? zoomMin : 1,
-                    max: isZoom && zoomMax ? zoomMax : 10000
+                slotProps={{
+                    htmlInput: {
+                        min: isZoom && zoomMin ? zoomMin : 1,
+                        max: isZoom && zoomMax ? zoomMax : 10000
+                    }
                 }}
                 size="small"
                 sx={{ mt: 1 }}
