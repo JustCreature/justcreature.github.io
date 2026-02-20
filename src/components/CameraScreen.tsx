@@ -26,11 +26,12 @@ import {
     Close,
     ArrowBack
 } from '@mui/icons-material';
-import { camera, geolocation } from '../utils/camera';
+import { camera, geolocation, lightMeter } from '../utils/camera';
 import type { FilmRoll, Exposure, ExposureSettings, Lens } from '../types';
 import { APERTURE, APERTURE_VALUES, SHUTTER_SPEED, SHUTTER_SPEED_VALUES, EI_VALUES } from '../types';
 import { FocalLengthSlider } from './FocalLengthSlider';
 import { FocalLengthRulerOverlay } from './FocalLengthRulerOverlay';
+import { LightMeterSlider } from './LightMeterSlider';
 import { colors } from '../theme';
 
 // Add CSS for enhanced shutter effect animation
@@ -80,6 +81,10 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
     const [showSettingsDialog, setShowSettingsDialog] = useState(false);
     const [showShutterEffect, setShowShutterEffect] = useState(false);
     const [showLensChangeDialog, setShowLensChangeDialog] = useState(false);
+    const [currentEV, setCurrentEV] = useState<number>(10); // Default EV
+    const [suggestedShutterSpeed, setSuggestedShutterSpeed] = useState<string>('1/125');
+    const [meterMode, setMeterMode] = useState<'hardware' | 'fallback'>('fallback');
+    const showLightMeter = true; // Always show light meter (toggle can be added later)
 
     const currentExposureNumber = exposures.filter(e => e.filmRollId === filmRoll.id).length + 1;
     const exposuresLeft = filmRoll.totalExposures - (currentExposureNumber - 1);
@@ -101,6 +106,57 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
             stopCamera();
         };
     }, [isCameraActive]);
+
+    // Continuous brightness monitoring for light meter using camera hardware data
+    useEffect(() => {
+        if (!isCameraActive || !streamRef.current) return;
+
+        // Analyze brightness every 1000ms
+        const intervalId = setInterval(() => {
+            if (streamRef.current) {
+                // Try to get camera's actual exposure data (more accurate)
+                const cameraData = lightMeter.getCameraExposureData(streamRef.current);
+
+                let ev: number;
+
+                if (cameraData) {
+                    // Use hardware data to calculate EV
+                    ev = lightMeter.calculateEVFromCamera(
+                        cameraData.iso,
+                        cameraData.exposureTime,
+                        currentSettings.aperture
+                    );
+                    setMeterMode('hardware');
+                    console.log('✓ Using camera hardware data:', { cameraData, ev });
+                } else {
+                    // Fallback to canvas-based brightness analysis
+                    if (videoRef.current && videoRef.current.videoWidth > 0) {
+                        const brightness = lightMeter.analyzeFrameBrightness(videoRef.current);
+                        ev = lightMeter.brightnessToEV(brightness);
+                        setMeterMode('fallback');
+                        console.log('⚠ Using fallback brightness analysis (less accurate):', { brightness, ev });
+                    } else {
+                        return; // Video not ready
+                    }
+                }
+
+                setCurrentEV(ev);
+
+                // Calculate suggested shutter speed
+                const iso = filmRoll.ei || filmRoll.iso;
+                const shutter = lightMeter.calculateShutterSpeed(
+                    currentSettings.aperture,
+                    ev,
+                    iso
+                );
+                setSuggestedShutterSpeed(shutter);
+
+                console.log('Light meter result:', { ev, shutter, filmIso: iso, mode: cameraData ? 'hardware' : 'fallback' });
+            }
+        }, 1000); // Update every 1 second
+
+        return () => clearInterval(intervalId);
+    }, [isCameraActive, currentSettings.aperture, filmRoll.iso, filmRoll.ei]);
 
     const startCamera = async () => {
         try {
@@ -273,6 +329,22 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
         setShowLensChangeDialog(false);
     };
 
+    // Get available apertures based on current lens
+    const getAvailableApertures = (): string[] => {
+        const currentLens = lenses.find(l => l.id === currentSettings.lensId);
+
+        if (!currentLens) {
+            return APERTURE_VALUES; // All apertures if no lens
+        }
+
+        // Filter apertures based on lens max aperture
+        const maxAperture = parseFloat(currentLens.maxAperture.replace('f/', ''));
+        return APERTURE_VALUES.filter(ap => {
+            const fNumber = parseFloat(ap.replace('f/', ''));
+            return fNumber >= maxAperture;
+        });
+    };
+
     return (
         <Container maxWidth="sm" sx={{ height: '100vh', py: 2, display: 'flex', flexDirection: 'column' }}>
             {/* Header */}
@@ -409,6 +481,23 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
                             }}
                             baseline={baseline}
                         />
+
+                        {/* Light Meter Overlay */}
+                        {showLightMeter && (
+                            <LightMeterSlider
+                                aperture={currentSettings.aperture}
+                                suggestedShutterSpeed={suggestedShutterSpeed}
+                                onApertureChange={(newAperture) => {
+                                    setCurrentSettings(prev => ({
+                                        ...prev,
+                                        aperture: newAperture as typeof APERTURE[keyof typeof APERTURE]
+                                    }));
+                                }}
+                                availableApertures={getAvailableApertures()}
+                                ev={currentEV}
+                                mode={meterMode}
+                            />
+                        )}
                     </>
                 ) : (
                     <Box

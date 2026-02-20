@@ -191,6 +191,138 @@ export const geolocation = {
     }
 };
 
+export const lightMeter = {
+    // Get camera's actual exposure settings (ISO, exposure time)
+    getCameraExposureData: (stream: MediaStream): { iso: number; exposureTime: number } | null => {
+        try {
+            const videoTrack = stream.getVideoTracks()[0];
+            if (!videoTrack) return null;
+
+            const settings = videoTrack.getSettings() as MediaTrackSettings & {
+                iso?: number;
+                exposureTime?: number;
+            };
+
+            // Get actual ISO and exposure time from camera hardware
+            const iso = settings.iso;
+            const exposureTime = settings.exposureTime;
+
+            if (iso && exposureTime) {
+                console.log('Camera settings:', { iso, exposureTime, settings });
+                return { iso, exposureTime };
+            }
+
+            return null;
+        } catch (error) {
+            console.warn('Could not get camera exposure data:', error);
+            return null;
+        }
+    },
+
+    // Calculate EV from camera's actual ISO and exposure time
+    calculateEVFromCamera: (iso: number, exposureTime: number, aperture: string): number => {
+        // EV formula: EV = log2(N²/t) + log2(ISO/100)
+        // Where:
+        // - N = f-number (aperture)
+        // - t = exposure time in seconds
+        // - ISO = sensitivity
+
+        const fNumber = parseFloat(aperture.replace('f/', ''));
+
+        // Convert exposure time from microseconds to seconds
+        const exposureSeconds = exposureTime / 1000000;
+
+        // Calculate EV
+        const ev = Math.log2((fNumber * fNumber) / exposureSeconds) + Math.log2(iso / 100);
+
+        console.log('EV calculation:', { fNumber, exposureSeconds, iso, ev });
+
+        return Math.round(ev * 10) / 10; // Round to 1 decimal
+    },
+
+    // Fallback: Analyze frame brightness from video element (less accurate due to auto-exposure)
+    analyzeFrameBrightness: (video: HTMLVideoElement): number => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx || video.videoWidth === 0 || video.videoHeight === 0) {
+            return 128; // Default mid-gray if not ready
+        }
+
+        // Use smaller canvas for performance (scale down by 4)
+        canvas.width = Math.floor(video.videoWidth / 4);
+        canvas.height = Math.floor(video.videoHeight / 4);
+
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+
+        let totalLuminance = 0;
+        let pixelCount = 0;
+
+        // Sample every 4th pixel for better performance
+        for (let i = 0; i < data.length; i += 16) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+
+            // ITU-R BT.709 luminance formula
+            const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+            totalLuminance += luminance;
+            pixelCount++;
+        }
+
+        return totalLuminance / pixelCount; // Returns 0-255
+    },
+
+    // Fallback: Convert brightness to EV (less accurate)
+    brightnessToEV: (brightness: number): number => {
+        // Empirical formula: brightness 0-255 → EV
+        const normalizedBrightness = brightness / 255;
+
+        // Logarithmic scale
+        const ev = Math.log2(normalizedBrightness * 100 + 0.01) + 3.5;
+
+        return Math.round(ev * 10) / 10; // Round to 1 decimal
+    },
+
+    // Calculate shutter speed for given aperture and EV
+    calculateShutterSpeed: (aperture: string, ev: number, iso: number): string => {
+        // EV formula: EV = log2(N²/t) + log2(ISO/100)
+        // Solve for t (shutter speed time)
+        // t = N² / (2^EV * ISO/100)
+
+        // Parse aperture (e.g., "f/2.8" → 2.8)
+        const fNumber = parseFloat(aperture.replace('f/', ''));
+
+        // Calculate shutter time in seconds
+        const shutterTime = (fNumber * fNumber) / (Math.pow(2, ev) * (iso / 100));
+
+        // Convert to standard shutter speed notation
+        return lightMeter.formatShutterSpeed(shutterTime);
+    },
+
+    // Format shutter time to standard notation (e.g., 1/125, 1/500)
+    formatShutterSpeed: (timeInSeconds: number): string => {
+        if (timeInSeconds >= 1) {
+            // Slow shutter: 1", 2", 4"
+            return `${Math.round(timeInSeconds)}"`;
+        } else {
+            // Fast shutter: 1/125, 1/500, etc.
+            const denominator = Math.round(1 / timeInSeconds);
+
+            // Snap to standard values
+            const standardSpeeds = [4000, 2000, 1000, 500, 250, 125, 60, 30, 15, 8, 4, 2];
+            const closest = standardSpeeds.reduce((prev, curr) =>
+                Math.abs(curr - denominator) < Math.abs(prev - denominator) ? curr : prev
+            );
+
+            return `1/${closest}`;
+        }
+    }
+};
+
 export const fileUtils = {
     // Scale and compress image file (for gallery uploads)
     scaleImageFile: (file: File): Promise<string> => {
