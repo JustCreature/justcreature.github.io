@@ -30,6 +30,7 @@ import { camera, geolocation } from '../utils/camera';
 import type { FilmRoll, Exposure, ExposureSettings, Lens } from '../types';
 import { APERTURE, APERTURE_VALUES, SHUTTER_SPEED, SHUTTER_SPEED_VALUES, EI_VALUES } from '../types';
 import { FocalLengthSlider } from './FocalLengthSlider';
+import { FocalLengthRulerOverlay } from './FocalLengthRulerOverlay';
 import { colors } from '../theme';
 
 // Add CSS for enhanced shutter effect animation
@@ -82,6 +83,12 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
 
     const currentExposureNumber = exposures.filter(e => e.filmRollId === filmRoll.id).length + 1;
     const exposuresLeft = filmRoll.totalExposures - (currentExposureNumber - 1);
+
+    // Focal length simulator - use currentSettings.focalLength as source of truth
+    const baseline = 24; // iPhone 13 standard camera equivalent
+    const focalLength = currentSettings.focalLength || baseline;
+    const zoomFactor = focalLength / baseline;
+    const showLetterbox = focalLength < baseline;
 
     useEffect(() => {
         if (isCameraActive) {
@@ -202,8 +209,8 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
                 setShowShutterEffect(false);
             }, 500);
 
-            // Capture the image immediately
-            const imageData = camera.captureImage(videoRef.current);
+            // Capture the image with zoom factor applied
+            const imageData = camera.captureImage(videoRef.current, zoomFactor);
 
             // Validate captured image
             if (!imageData || imageData.length < 100) {
@@ -338,9 +345,41 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
                             style={{
                                 width: '100%',
                                 height: '100%',
-                                objectFit: 'cover'
+                                objectFit: 'cover',
+                                transform: `scale(${zoomFactor})`,
+                                transformOrigin: 'center center',
+                                transition: 'transform 0.15s ease-out'
                             }}
                         />
+
+                        {/* Letterbox bars for ultra-wide angles (<24mm) */}
+                        {showLetterbox && (
+                            <>
+                                {/* Top black bar */}
+                                <Box sx={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    height: '20%',
+                                    backgroundColor: 'black',
+                                    zIndex: 5,
+                                    pointerEvents: 'none',
+                                }} />
+                                {/* Bottom black bar */}
+                                <Box sx={{
+                                    position: 'absolute',
+                                    bottom: 0,
+                                    left: 0,
+                                    right: 0,
+                                    height: '20%',
+                                    backgroundColor: 'black',
+                                    zIndex: 5,
+                                    pointerEvents: 'none',
+                                }} />
+                            </>
+                        )}
+
                         {/* Enhanced Shutter Effect Overlay */}
                         {showShutterEffect && (
                             <Box
@@ -357,6 +396,19 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
                                 }}
                             />
                         )}
+
+                        {/* Focal Length Ruler Overlay */}
+                        <FocalLengthRulerOverlay
+                            value={focalLength}
+                            onChange={(newValue) => {
+                                // Update exposure settings (single source of truth)
+                                setCurrentSettings(prev => ({
+                                    ...prev,
+                                    focalLength: newValue
+                                }));
+                            }}
+                            baseline={baseline}
+                        />
                     </>
                 ) : (
                     <Box
