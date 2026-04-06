@@ -24,13 +24,15 @@ import {
     PhotoLibrary,
     CameraAlt,
     Close,
-    ArrowBack
+    ArrowBack,
+    LightMode
 } from '@mui/icons-material';
-import { camera, geolocation } from '../utils/camera';
+import { camera, lightMeter, geolocation } from '../utils/camera';
 import type { FilmRoll, Exposure, ExposureSettings, Lens } from '../types';
 import { APERTURE, APERTURE_VALUES, SHUTTER_SPEED, SHUTTER_SPEED_VALUES, EI_VALUES } from '../types';
 import { FocalLengthSlider } from './FocalLengthSlider';
 import { FocalLengthRulerOverlay } from './FocalLengthRulerOverlay';
+import { LightMeterSlider } from './LightMeterSlider';
 import { colors } from '../theme';
 
 // Add CSS for enhanced shutter effect animation
@@ -80,6 +82,9 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
     const [showSettingsDialog, setShowSettingsDialog] = useState(false);
     const [showShutterEffect, setShowShutterEffect] = useState(false);
     const [showLensChangeDialog, setShowLensChangeDialog] = useState(false);
+    const [currentEV, setCurrentEV] = useState<number>(10); // Default EV
+    const [suggestedShutterSpeed, setSuggestedShutterSpeed] = useState<string>('1/125');
+    const [showLightMeter, setShowLightMeter] = useState<boolean>(true); // Toggle
 
     const currentExposureNumber = exposures.filter(e => e.filmRollId === filmRoll.id).length + 1;
     const exposuresLeft = filmRoll.totalExposures - (currentExposureNumber - 1);
@@ -101,6 +106,48 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
             stopCamera();
         };
     }, [isCameraActive]);
+
+    useEffect(() => {
+        if (!isCameraActive || !videoRef.current || !showLightMeter) return;
+
+        // Analyze brightness every 1000ms
+        const intervalId = setInterval(() => {
+            if (videoRef.current && videoRef.current.videoWidth > 0) {
+                // Get brightness
+                const brightness = lightMeter.analyzeFrameBrightness(videoRef.current, streamRef.current || undefined);
+
+                // Convert to EV
+                const ev = lightMeter.brightnessToEV(brightness);
+                setCurrentEV(ev);
+
+                // Calculate suggested shutter speed
+                const iso = filmRoll.ei || filmRoll.iso;
+                const shutter = lightMeter.calculateShutterSpeed(
+                    currentSettings.aperture,
+                    ev,
+                    iso
+                );
+                setSuggestedShutterSpeed(shutter);
+            }
+        }, 1000); // Update every 1 second
+
+        return () => clearInterval(intervalId);
+    }, [isCameraActive, showLightMeter, currentSettings.aperture, filmRoll.iso, filmRoll.ei]);
+
+    const getAvailableApertures = (): string[] => {
+        const currentLens = lenses.find(l => l.id === currentSettings.lensId);
+
+        if (!currentLens) {
+            return [...APERTURE_VALUES]; // All apertures if no lens
+        }
+
+        // Filter apertures based on lens max aperture
+        const maxAperture = parseFloat(currentLens.maxAperture.replace('f/', ''));
+        return APERTURE_VALUES.filter(ap => {
+            const fNumber = parseFloat(ap.replace('f/', ''));
+            return fNumber >= maxAperture;
+        });
+    };
 
     const startCamera = async () => {
         try {
@@ -313,9 +360,18 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
                         </Typography>
                     </Box>
                 </Box>
-                <IconButton onClick={onOpenGallery} color="primary" aria-label="View Gallery">
-                    <PhotoLibrary />
-                </IconButton>
+                <Box>
+                    <IconButton
+                        onClick={() => setShowLightMeter(!showLightMeter)}
+                        color={showLightMeter ? 'primary' : 'default'}
+                        aria-label="Toggle Light Meter"
+                    >
+                        <LightMode />
+                    </IconButton>
+                    <IconButton onClick={onOpenGallery} color="primary" aria-label="View Gallery">
+                        <PhotoLibrary />
+                    </IconButton>
+                </Box>
             </Box>
 
             {/* Camera View - Viewfinder Frame */}
@@ -409,6 +465,29 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
                             }}
                             baseline={baseline}
                         />
+
+                        {/* Light Meter Overlay */}
+                        {showLightMeter && (
+                            <LightMeterSlider
+                                aperture={currentSettings.aperture}
+                                suggestedShutterSpeed={suggestedShutterSpeed}
+                                currentShutterSpeed={currentSettings.shutterSpeed}
+                                onApertureChange={(newAperture) => {
+                                    setCurrentSettings(prev => ({
+                                        ...prev,
+                                        aperture: newAperture as typeof APERTURE[keyof typeof APERTURE]
+                                    }));
+                                }}
+                                onApplySuggestedShutterSpeed={() => {
+                                    setCurrentSettings(prev => ({
+                                        ...prev,
+                                        shutterSpeed: suggestedShutterSpeed as typeof SHUTTER_SPEED[keyof typeof SHUTTER_SPEED]
+                                    }));
+                                }}
+                                availableApertures={getAvailableApertures()}
+                                ev={currentEV}
+                            />
+                        )}
                     </>
                 ) : (
                     <Box
