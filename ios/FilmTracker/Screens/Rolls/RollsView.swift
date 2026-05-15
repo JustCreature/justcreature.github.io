@@ -40,6 +40,7 @@ struct RollsView: View {
     @State private var rollToEdit: FilmRoll? = nil
     @State private var rollToDelete: FilmRoll? = nil
     @State private var showingDeleteConfirmation = false
+    @State private var navigationPath = NavigationPath()
     
     var filteredRolls: [FilmRoll] {
         allRolls.filter { roll in
@@ -90,15 +91,15 @@ struct RollsView: View {
                     ScrollView {
                         LazyVStack(spacing: 12) {
                             ForEach(filteredRolls) { roll in
-                                RollCard(
-                                    roll: roll,
-                                    onEdit: { rollToEdit = roll },
-                                    onDelete: { rollToDelete = roll; showingDeleteConfirmation = true }
-                                )
-                                .onTapGesture {
-                                    // Navigation to Capture or Gallery
-                                    print("Tap roll: \(roll.name)")
+                                NavigationLink(value: roll) {
+                                    RollCard(
+                                        roll: roll,
+                                        onEdit: { rollToEdit = roll },
+                                        onDelete: { rollToDelete = roll; showingDeleteConfirmation = true }
+                                    )
                                 }
+                                .buttonStyle(.plain)
+                                .accessibilityIdentifier(roll.name)
                             }
                         }
                         .padding(.vertical, 12)
@@ -123,6 +124,9 @@ struct RollsView: View {
             }
             .padding(24)
             .accessibilityIdentifier("addRollFAB")
+        }
+        .navigationDestination(for: FilmRoll.self) { roll in
+            CaptureView(roll: roll, modelContext: modelContext)
         }
         .navigationTitle("Rolls")
         .toolbar {
