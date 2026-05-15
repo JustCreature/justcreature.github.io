@@ -36,3 +36,5 @@ playwright/.cache/
 .env
 .agents
 .claude
+
+film-photo-tracker/

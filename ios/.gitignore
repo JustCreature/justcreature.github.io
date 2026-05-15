@@ -1,0 +1,56 @@
+# macOS
+.DS_Store
+
+# Xcode
+#
+# gitignore.io results for: Xcode
+build/
+DerivedData/
+*.xcodeproj
+*.xcworkspace
+!default.xcworkspace
+xcuserdata/
+*.xccheckout
+*.xcscmblueprint
+*.xctestplan
+*.moved-aside
+DerivedData/
+*.hmap
+*.ipa
+*.xcuserstate
+*.itunespackage
+
+# Swift Package Manager
+#
+# Add this line if you want to avoid committing the test-generated folders
+.build/
+Packages/
+Package.resolved
+Package.pins
+.swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
+.swiftpm/xcode/xcuserdata/
+
+# XcodeGen
+#
+# Project file is generated from project.yml
+# *.xcodeproj is already ignored above
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# Bundle
+vendor/bundle/
+.bundle/
+
+# Backup files
+*.bak
+*.swp
+*.swo
+
+# Crash reports
+*.crash
+
+film-photo-tracker/
