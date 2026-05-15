@@ -23,6 +23,7 @@ struct EntityRow: View {
                 Text(title)
                     .font(.appHeadline(16))
                     .foregroundColor(.appText)
+                    .accessibilityIdentifier("entityRowTitle")
                 
                 Text(subtitle)
                     .font(.appMono(12))
@@ -40,6 +41,7 @@ struct EntityRow: View {
                         .foregroundColor(.muted)
                         .padding(8)
                 }
+                .accessibilityIdentifier("entityRowMoreButton")
             }
         }
         .padding(.vertical, 12)

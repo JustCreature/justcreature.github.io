@@ -38,13 +38,6 @@ struct RollsView: View {
     }
 }
 
-struct EquipmentView: View {
-    var body: some View {
-        Text("Equipment")
-            .navigationTitle("Equipment")
-    }
-}
-
 #Preview {
     ContentView()
 }

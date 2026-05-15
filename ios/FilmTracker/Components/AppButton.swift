@@ -9,6 +9,7 @@ struct AppButton: View {
     
     var title: String
     var variant: Variant = .primary
+    var isDisabled: Bool = false
     var action: () -> Void
     
     var body: some View {
@@ -20,7 +21,9 @@ struct AppButton: View {
                 .background(backgroundView)
                 .foregroundColor(foregroundColor)
                 .cornerRadius(Constants.Design.radiusMD)
+                .opacity(isDisabled ? 0.5 : 1.0)
         }
+        .disabled(isDisabled)
         .buttonStyle(ScaleButtonStyle())
     }
     

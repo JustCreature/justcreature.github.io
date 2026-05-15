@@ -11,52 +11,69 @@ struct AppChip: View {
     var variant: Variant = .standard
     var isLarge: Bool = false
     var isMono: Bool = false
+    var isSelected: Bool = false
+    var action: (() -> Void)? = nil
     
     var body: some View {
-        Text(title)
-            .font(isMono ? .appMono(isLarge ? 16 : 14) : .appLabel(isLarge ? 14 : 12))
-            .padding(.horizontal, isLarge ? 16 : 10)
-            .padding(.vertical, isLarge ? 8 : 4)
-            .background(backgroundView)
-            .foregroundColor(foregroundColor)
-            .cornerRadius(Constants.Design.radiusPill)
-            .overlay(
-                RoundedRectangle(cornerRadius: Constants.Design.radiusPill)
-                    .stroke(borderColor, lineWidth: 1)
-            )
+        Button {
+            action?()
+        } label: {
+            Text(title)
+                .font(isMono ? .appMono(isLarge ? 16 : 14) : .appLabel(isLarge ? 14 : 12))
+                .padding(.horizontal, isLarge ? 16 : 10)
+                .padding(.vertical, isLarge ? 8 : 4)
+                .background(backgroundView)
+                .foregroundColor(foregroundColor)
+                .cornerRadius(Constants.Design.radiusPill)
+                .overlay(
+                    RoundedRectangle(cornerRadius: Constants.Design.radiusPill)
+                        .stroke(borderColor, lineWidth: 1)
+                )
+        }
+        .disabled(action == nil)
     }
     
     @ViewBuilder
     private var backgroundView: some View {
-        switch variant {
-        case .standard:
-            Color.surface2
-        case .accentGlow:
+        if isSelected {
             Color.accent.opacity(0.15)
-        case .ghost:
-            Color.clear
+        } else {
+            switch variant {
+            case .standard:
+                Color.surface2
+            case .accentGlow:
+                Color.accent.opacity(0.15)
+            case .ghost:
+                Color.clear
+            }
         }
     }
     
     private var foregroundColor: Color {
+        if isSelected {
+            return .accent
+        }
         switch variant {
         case .standard:
-            .appText
+            return .appText
         case .accentGlow:
-            .accent
+            return .accent
         case .ghost:
-            .muted
+            return .muted
         }
     }
     
     private var borderColor: Color {
+        if isSelected {
+            return .accent.opacity(0.3)
+        }
         switch variant {
         case .standard:
-            .clear
+            return .clear
         case .accentGlow:
-            .accent.opacity(0.3)
+            return .accent.opacity(0.3)
         case .ghost:
-            .dim
+            return .dim
         }
     }
 }

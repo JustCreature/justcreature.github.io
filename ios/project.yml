@@ -27,3 +27,14 @@ targets:
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
+  FilmTrackerUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: FilmTrackerUITests
+    dependencies:
+      - target: FilmTracker
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES

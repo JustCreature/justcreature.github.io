@@ -35,11 +35,12 @@ launch:
 down:
 	xcrun simctl shutdown booted || true
 
-# Runs unit tests.
+# Runs all tests (Unit + UI).
 test:
 	xcodebuild test -project $(PROJECT_NAME).xcodeproj \
 		-scheme $(PROJECT_NAME) \
-		-destination '$(DESTINATION)'
+		-destination '$(DESTINATION)' \
+		-derivedDataPath build
 
 # Cleans build artifacts and the generated Xcode project.
 clean:
