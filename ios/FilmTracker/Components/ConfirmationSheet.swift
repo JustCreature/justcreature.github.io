@@ -22,25 +22,19 @@ struct ConfirmationSheet: View {
             }
             
             VStack(spacing: 12) {
-                Button(action: onConfirm) {
-                    Text(confirmTitle)
-                        .font(.appLabel(16))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(isDestructive ? Color.appRed : Color.accent)
-                        .cornerRadius(Constants.Design.radiusMD)
-                }
+                AppButton(
+                    title: confirmTitle,
+                    variant: isDestructive ? .destructive : .primary,
+                    action: onConfirm
+                )
+                .accessibilityIdentifier("confirmationConfirmButton")
                 
-                Button(action: onCancel) {
-                    Text("Cancel")
-                        .font(.appLabel(16))
-                        .foregroundColor(.appText)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(Color.surface2)
-                        .cornerRadius(Constants.Design.radiusMD)
-                }
+                AppButton(
+                    title: "Cancel",
+                    variant: .secondary,
+                    action: onCancel
+                )
+                .accessibilityIdentifier("confirmationCancelButton")
             }
         }
         .padding(24)

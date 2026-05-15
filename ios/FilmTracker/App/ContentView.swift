@@ -30,14 +30,7 @@ struct ContentView: View {
     }
 }
 
-// Placeholders for views
-struct RollsView: View {
-    var body: some View {
-        Text("Film Rolls")
-            .navigationTitle("Rolls")
-    }
-}
-
 #Preview {
     ContentView()
+        .modelContainer(for: [FilmRoll.self, Exposure.self, Camera.self, Lens.self], inMemory: true)
 }

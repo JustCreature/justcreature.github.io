@@ -5,6 +5,7 @@ struct AppButton: View {
         case primary
         case secondary
         case ghost
+        case destructive
     }
     
     var title: String
@@ -36,6 +37,8 @@ struct AppButton: View {
             Color.surface2
         case .ghost:
             Color.clear
+        case .destructive:
+            Color.appRed
         }
     }
     
@@ -45,6 +48,8 @@ struct AppButton: View {
             .black
         case .secondary, .ghost:
             .appText
+        case .destructive:
+            .white
         }
     }
 }
