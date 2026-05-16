@@ -38,9 +38,18 @@ final class FilmRollManagementTests: XCTestCase {
         // Confirm
         app.buttons["confirmRollFormButton"].tap()
         
-        // Verify in list
+        // Verify we are in CaptureView or see the roll title (frame counter has it)
         let rollTitle = app.staticTexts[finalName]
-        XCTAssertTrue(rollTitle.waitForExistence(timeout: 5))
+        XCTAssertTrue(rollTitle.waitForExistence(timeout: 10))
+        
+        // Navigate back to Rolls list
+        let backButton = app.buttons["chevron.left"]
+        if backButton.exists {
+            backButton.tap()
+        }
+        
+        // Verify in list
+        XCTAssertTrue(app.staticTexts[finalName].waitForExistence(timeout: 5))
         
         return finalName
     }

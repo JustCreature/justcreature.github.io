@@ -26,15 +26,40 @@ extension Color {
         )
     }
     
-    static let appBg = Color(hex: Constants.Design.bg)
-    static let surface0 = Color(hex: Constants.Design.surface0)
-    static let surface1 = Color(hex: Constants.Design.surface1)
-    static let surface2 = Color(hex: Constants.Design.surface2)
-    static let surface3 = Color(hex: Constants.Design.surface3)
+    static let appBg = Color(UIColor { trait in
+        trait.userInterfaceStyle == .dark ? UIColor(Color(hex: Constants.Design.bg)) : UIColor(Color(hex: "#f5f5f7"))
+    })
+    
+    static let surface0 = Color(UIColor { trait in
+        trait.userInterfaceStyle == .dark ? UIColor(Color(hex: Constants.Design.surface0)) : UIColor(Color(hex: "#ffffff"))
+    })
+    
+    static let surface1 = Color(UIColor { trait in
+        trait.userInterfaceStyle == .dark ? UIColor(Color(hex: Constants.Design.surface1)) : UIColor(Color(hex: "#f2f2f7"))
+    })
+    
+    static let surface2 = Color(UIColor { trait in
+        trait.userInterfaceStyle == .dark ? UIColor(Color(hex: Constants.Design.surface2)) : UIColor(Color(hex: "#e5e5ea"))
+    })
+    
+    static let surface3 = Color(UIColor { trait in
+        trait.userInterfaceStyle == .dark ? UIColor(Color(hex: Constants.Design.surface3)) : UIColor(Color(hex: "#d1d1d6"))
+    })
+    
     static let accent = Color(hex: Constants.Design.accent)
-    static let appText = Color(hex: Constants.Design.text)
-    static let muted = Color(hex: Constants.Design.muted)
-    static let dim = Color(hex: Constants.Design.dim)
+    
+    static let appText = Color(UIColor { trait in
+        trait.userInterfaceStyle == .dark ? UIColor(Color(hex: Constants.Design.text)) : UIColor(Color(hex: "#1c1c1e"))
+    })
+    
+    static let muted = Color(UIColor { trait in
+        trait.userInterfaceStyle == .dark ? UIColor(Color(hex: Constants.Design.muted)) : UIColor(Color(hex: "#8e8e93"))
+    })
+    
+    static let dim = Color(UIColor { trait in
+        trait.userInterfaceStyle == .dark ? UIColor(Color(hex: Constants.Design.dim)) : UIColor(Color(hex: "#c7c7cc"))
+    })
+    
     static let appRed = Color(hex: Constants.Design.red)
     static let appGreen = Color(hex: Constants.Design.green)
 }

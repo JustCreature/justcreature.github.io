@@ -35,6 +35,7 @@ struct FilterPillsView: View {
                                 .stroke(Color.white.opacity(0.1), lineWidth: 1)
                         )
                     }
+                    .accessibilityIdentifier("filter_\(filter.rawValue.lowercased())")
                 }
             }
             .padding(.horizontal)
@@ -59,9 +60,16 @@ struct RollsView: View {
     @State private var showingDeleteConfirmation = false
     @State private var navigationPath = NavigationPath()
     
+    // Import handling
+    @State private var showingDocumentPicker = false
+    @State private var documentPickerMode: UIDocumentPickerMode = .import
+    @State private var importErrorMessage: String?
+    @State private var showingImportError = false
+    
     var filteredRolls: [FilmRoll] {
         allRolls.filter { roll in
-            let exposureCount = allExposures.filter { $0.filmRollId == roll.id }.count
+            let rollId = roll.id
+            let exposureCount = allExposures.filter { $0.filmRollId == rollId }.count
             switch selectedFilter {
             case .all: return true
             case .active: return exposureCount < roll.totalExposures
@@ -73,10 +81,12 @@ struct RollsView: View {
     var filterCounts: [RollFilter: Int] {
         var counts: [RollFilter: Int] = [:]
         counts[.all] = allRolls.count
-        counts[.active] = allRolls.filter { roll in
-            allExposures.filter { $0.filmRollId == roll.id }.count < roll.totalExposures
+        let activeCount = allRolls.filter { roll in
+            let rollId = roll.id
+            return allExposures.filter { $0.filmRollId == rollId }.count < roll.totalExposures
         }.count
-        counts[.complete] = allRolls.count - (counts[.active] ?? 0)
+        counts[.active] = activeCount
+        counts[.complete] = allRolls.count - activeCount
         return counts
     }
     
@@ -140,7 +150,8 @@ struct RollsView: View {
                 .accessibilityIdentifier("addRollFAB")
             }
             .navigationDestination(for: FilmRoll.self) { roll in
-                let exposureCount = allExposures.filter { $0.filmRollId == roll.id }.count
+                let rollId = roll.id
+                let exposureCount = allExposures.filter { $0.filmRollId == rollId }.count
                 if exposureCount >= roll.totalExposures {
                     GalleryView(roll: roll, modelContext: modelContext)
                 } else {
@@ -157,7 +168,7 @@ struct RollsView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
-                        print("Import stub")
+                        showingDocumentPicker = true
                     } label: {
                         Image(systemName: "square.and.arrow.down")
                             .foregroundColor(.accent)
@@ -165,9 +176,7 @@ struct RollsView: View {
                 }
                 
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        print("Settings stub")
-                    } label: {
+                    NavigationLink(destination: SettingsView()) {
                         Image(systemName: "gearshape")
                             .foregroundColor(.white)
                     }
@@ -184,7 +193,7 @@ struct RollsView: View {
             .sheet(isPresented: $showingFABMenu) {
                 FABMenu(
                     onNewRoll: { showingForm = true },
-                    onImport: { print("Import stub") },
+                    onImport: { showingDocumentPicker = true },
                     onResumeLast: {
                         if let lastRoll = allRolls.first {
                             navigationPath.append(lastRoll)
@@ -194,16 +203,47 @@ struct RollsView: View {
                 .presentationDetents([.height(340)])
                 .presentationBackground(.clear)
             }
-            .confirmationDialog("Delete Roll?", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
-                Button("Delete", role: .destructive) {
-                    if let roll = rollToDelete {
-                        deleteRoll(roll)
+            .sheet(isPresented: $showingDocumentPicker) {
+                DocumentPicker { urls in
+                    guard let url = urls.first else { return }
+                    Task {
+                        do {
+                            if url.hasDirectoryPath {
+                                try await ImportService.shared.importFromFolder(url: url, modelContext: modelContext)
+                            } else {
+                                try await ImportService.shared.importFromJSON(url: url, modelContext: modelContext)
+                            }
+                        } catch {
+                            importErrorMessage = error.localizedDescription
+                            showingImportError = true
+                        }
                     }
                 }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("This will permanently remove the roll and all its exposures.")
             }
+            .alert("Import Failed", isPresented: $showingImportError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(importErrorMessage ?? "An unknown error occurred during import.")
+            }
+            .sheet(isPresented: $showingDeleteConfirmation) {
+                ConfirmationSheet(
+                    title: "Delete Roll?",
+                    message: "This will permanently delete '\(rollToDelete?.name ?? "")' and all its exposures. This cannot be undone.",
+                    confirmTitle: "Delete",
+                    isDestructive: true,
+                    onConfirm: {
+                        if let roll = rollToDelete {
+                            deleteRoll(roll)
+                        }
+                        showingDeleteConfirmation = false
+                    },
+                    onCancel: {
+                        showingDeleteConfirmation = false
+                    }
+                )
+                .presentationDetents([.height(300)])
+            }
+
         }
     }
     

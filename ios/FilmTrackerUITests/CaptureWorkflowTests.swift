@@ -17,9 +17,6 @@ final class CaptureWorkflowTests: XCTestCase {
     }
     
     func testCaptureScreenLoads() {
-        // Tap the roll to enter capture screen
-        app.buttons[rollName].firstMatch.tap()
-        
         // Verify capture screen elements
         XCTAssertTrue(app.buttons["grid"].exists)
         XCTAssertTrue(app.buttons["viewfinder"].exists)
@@ -29,8 +26,6 @@ final class CaptureWorkflowTests: XCTestCase {
     }
     
     func testPickerInteractions() {
-        app.buttons[rollName].firstMatch.tap()
-        
         // Tap Aperture chip
         app.buttons["APER"].tap()
         
@@ -47,8 +42,6 @@ final class CaptureWorkflowTests: XCTestCase {
     }
     
     func testNoteSheet() {
-        app.buttons[rollName].firstMatch.tap()
-        
         app.buttons["note.text"].tap()
         
         let noteEditor = app.textViews.firstMatch

@@ -101,8 +101,9 @@ struct RollCard: View {
                             Image(systemName: "ellipsis")
                                 .padding(8)
                                 .foregroundColor(.muted)
+                                .contentShape(Rectangle())
+                                .accessibilityIdentifier("rollCardMoreMenu")
                         }
-                        .accessibilityIdentifier("rollCardMoreMenu")
                     }
                     
                     // Metadata line
