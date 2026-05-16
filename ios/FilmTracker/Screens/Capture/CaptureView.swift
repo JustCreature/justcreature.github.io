@@ -183,9 +183,20 @@ struct CaptureView: View {
             
             Spacer()
             
-            VStack(spacing: 8) {
-                toggleButton(icon: "grid", active: $viewModel.showGrid)
-                toggleButton(icon: "viewfinder", active: $viewModel.showFrameLines)
+            HStack(spacing: 12) {
+                NavigationLink(value: GalleryDestination(roll: viewModel.roll)) {
+                    Image(systemName: "photo.on.rectangle")
+                        .foregroundColor(.white)
+                        .padding(10)
+                        .background(.ultraThinMaterial)
+                        .clipShape(Circle())
+                }
+                .accessibilityIdentifier("galleryButton")
+                
+                VStack(spacing: 8) {
+                    toggleButton(icon: "grid", active: $viewModel.showGrid)
+                    toggleButton(icon: "viewfinder", active: $viewModel.showFrameLines)
+                }
             }
         }
         .padding(.top, 10)
@@ -327,14 +338,13 @@ struct CaptureView: View {
                         .frame(width: 64, height: 64)
                 }
             }
+            .accessibilityIdentifier("shutterButton")
             .disabled(viewModel.isRollFull || viewModel.isCapturing)
             
             Spacer()
             
             // Last Shot Peek
-            Button {
-                // Navigate to Gallery
-            } label: {
+            NavigationLink(value: GalleryDestination(roll: viewModel.roll)) {
                 Group {
                     if let imageData = viewModel.lastExposureThumbnail, let uiImage = UIImage(data: imageData) {
                         Image(uiImage: uiImage)
@@ -350,6 +360,7 @@ struct CaptureView: View {
                 .clipShape(Circle())
                 .overlay(Circle().stroke(.white.opacity(0.2), lineWidth: 1))
             }
+            .accessibilityIdentifier("lastShotPeek")
         }
         .padding(.bottom, 30)
     }

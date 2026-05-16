@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import CoreLocation
 
 @Model
 final class Exposure {
@@ -19,6 +20,11 @@ final class Exposure {
     var ei: Int?
     var lensId: String?
     var focalLength: Int?
+    
+    var location: CLLocationCoordinate2D? {
+        guard let latitude, let longitude else { return nil }
+        return CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+    }
     
     init(
         id: String = UUID().uuidString,

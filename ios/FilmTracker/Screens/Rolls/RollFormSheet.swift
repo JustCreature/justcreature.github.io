@@ -6,6 +6,7 @@ struct RollFormSheet: View {
     @Environment(\.dismiss) private var dismiss
     
     var roll: FilmRoll? // Nil for create
+    var onSave: ((FilmRoll) -> Void)? = nil
     
     @Query private var cameras: [Camera]
     @Query private var lenses: [Lens]
@@ -36,8 +37,9 @@ struct RollFormSheet: View {
         !name.trimmingCharacters(in: .whitespaces).isEmpty
     }
     
-    init(roll: FilmRoll? = nil) {
+    init(roll: FilmRoll? = nil, onSave: ((FilmRoll) -> Void)? = nil) {
         self.roll = roll
+        self.onSave = onSave
         if let roll = roll {
             _name = State(initialValue: roll.name)
             _iso = State(initialValue: roll.iso)
@@ -258,9 +260,11 @@ struct RollFormSheet: View {
             roll.cameraId = cameraId
             roll.currentLensId = currentLensId
             roll.tag = cleanedTag
+            onSave?(roll)
         } else {
             let newRoll = FilmRoll(name: name, iso: iso, ei: ei, totalExposures: finalExposures, cameraId: cameraId, currentLensId: currentLensId, tag: cleanedTag)
             modelContext.insert(newRoll)
+            onSave?(newRoll)
         }
         dismiss()
     }
