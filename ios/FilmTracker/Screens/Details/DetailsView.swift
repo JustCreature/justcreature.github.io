@@ -24,11 +24,15 @@ struct DetailsView: View {
                 VStack(spacing: 20) {
                     heroImage
                     
-                    readoutGrid
-                    
-                    metadataCard
-                    
-                    notesSection
+                    if viewModel.isEditing {
+                        editingForm
+                    } else {
+                        readoutGrid
+                        
+                        metadataCard
+                        
+                        notesSection
+                    }
                     
                     Spacer(minLength: 40)
                 }
@@ -47,7 +51,7 @@ struct DetailsView: View {
                     } label: {
                         Text(viewModel.isEditing ? "Save" : "Edit")
                             .font(.custom("InterTight-Bold", size: 16))
-                            .foregroundColor(Color(hex: Constants.Design.accent))
+                            .foregroundColor(.accent)
                     }
                     
                     if viewModel.isEditing {
@@ -55,13 +59,13 @@ struct DetailsView: View {
                             viewModel.cancel()
                         }
                         .font(.custom("InterTight-Medium", size: 16))
-                        .foregroundColor(.white)
+                        .foregroundColor(.appText)
                     } else {
                         Button(role: .destructive) {
                             showingDeleteConfirmation = true
                         } label: {
                             Image(systemName: "trash")
-                                .foregroundColor(Color(hex: Constants.Design.red))
+                                .foregroundColor(.appRed)
                         }
                     }
                 }
@@ -127,6 +131,56 @@ struct DetailsView: View {
         .photosPicker(isPresented: $showingPhotosPicker, selection: $selectedItem, matching: .images)
     }
     
+    @ViewBuilder
+    private var editingForm: some View {
+        VStack(spacing: 20) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("EXPOSURE SETTINGS")
+                    .font(.appMono(10))
+                    .foregroundColor(.muted)
+                
+                VStack(spacing: 0) {
+                    pickerRow(label: "Aperture", options: Constants.apertures, selection: $viewModel.aperture)
+                    Divider().background(Color.appText.opacity(0.1))
+                    pickerRow(label: "Shutter", options: Constants.shutterSpeeds, selection: $viewModel.shutterSpeed)
+                    Divider().background(Color.appText.opacity(0.1))
+                    pickerRow(label: "EI", options: Constants.eiValues.map { "\($0)" }, selection: Binding(
+                        get: { "\(viewModel.ei)" },
+                        set: { viewModel.ei = Int($0) ?? 400 }
+                    ))
+                    Divider().background(Color.appText.opacity(0.1))
+                    pickerRow(label: "Focal", options: Constants.focalPresets.map { "\($0)mm" }, selection: Binding(
+                        get: { viewModel.focalLength != nil ? "\(viewModel.focalLength!)mm" : "—" },
+                        set: { viewModel.focalLength = Int($0.replacingOccurrences(of: "mm", with: "")) }
+                    ))
+                }
+                .background(Color.surface1)
+                .cornerRadius(12)
+            }
+            
+            notesSection
+        }
+        .padding(.horizontal, 20)
+    }
+    
+    private func pickerRow(label: String, options: [String], selection: Binding<String>) -> some View {
+        HStack {
+            Text(label)
+                .font(.appBody(16))
+                .foregroundColor(.appText)
+            Spacer()
+            Picker(label, selection: selection) {
+                ForEach(options, id: \.self) { option in
+                    Text(option).tag(option)
+                }
+            }
+            .pickerStyle(.menu)
+            .tint(.accent)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+    }
+    
     private func perforationOverlay(isTop: Bool) -> some View {
         VStack {
             if !isTop { Spacer() }
@@ -160,39 +214,39 @@ struct DetailsView: View {
             ReadoutTile(label: "EI", value: "\(viewModel.ei)", isDimmed: false)
             ReadoutTile(label: "Focal", value: viewModel.focalLength != nil ? "\(viewModel.focalLength!)mm" : "—", isDimmed: viewModel.focalLength == nil)
         }
-        .padding(.horizontal)
+        .padding(.horizontal, 20)
     }
     
     private var metadataCard: some View {
         VStack(spacing: 0) {
             metadataRow(icon: "camera", label: "Camera", value: viewModel.cameraName)
-            Divider().background(Color.white.opacity(0.05))
+            Divider().background(Color.appText.opacity(0.05))
             metadataRow(icon: "camera.filters", label: "Lens", value: viewModel.lensName)
-            Divider().background(Color.white.opacity(0.05))
+            Divider().background(Color.appText.opacity(0.05))
             metadataRow(icon: "clock", label: "Captured", value: viewModel.exposure.capturedAt.formatted(date: .abbreviated, time: .shortened))
-            Divider().background(Color.white.opacity(0.05))
+            Divider().background(Color.appText.opacity(0.05))
             metadataRow(icon: "location", label: "Location", value: locationString)
         }
-        .background(Color(hex: Constants.Design.surface1))
+        .background(Color.surface1)
         .clipShape(RoundedRectangle(cornerRadius: Constants.Design.radiusLG))
-        .padding(.horizontal)
+        .padding(.horizontal, 20)
     }
     
     private func metadataRow(icon: String, label: String, value: String) -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .foregroundColor(Color(hex: Constants.Design.muted))
+                .foregroundColor(.muted)
                 .frame(width: 20)
             
             Text(label)
                 .font(.custom("InterTight-Medium", size: 14))
-                .foregroundColor(Color(hex: Constants.Design.muted))
+                .foregroundColor(.muted)
             
             Spacer()
             
             Text(value)
                 .font(.custom("JetBrainsMono-Bold", size: 14))
-                .foregroundColor(.white)
+                .foregroundColor(.appText)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
@@ -202,28 +256,28 @@ struct DetailsView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("NOTES")
                 .font(.custom("InterTight-Bold", size: 12))
-                .foregroundColor(Color(hex: Constants.Design.muted))
+                .foregroundColor(.muted)
                 .padding(.leading, 4)
-            
+
             if viewModel.isEditing {
                 TextEditor(text: $viewModel.additionalInfo)
                     .font(.custom("InterTight-Regular", size: 14))
-                    .foregroundColor(.white)
+                    .foregroundColor(.appText)
                     .frame(minHeight: 120)
                     .padding(12)
-                    .background(Color(hex: Constants.Design.surface2))
+                    .background(Color.surface2)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
             } else {
                 Text(viewModel.additionalInfo.isEmpty ? "No notes added." : viewModel.additionalInfo)
                     .font(.custom("InterTight-Regular", size: 14))
-                    .foregroundColor(viewModel.additionalInfo.isEmpty ? Color(hex: Constants.Design.dim) : .white)
+                    .foregroundColor(viewModel.additionalInfo.isEmpty ? .dim : .appText)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(16)
-                    .background(Color(hex: Constants.Design.surface1))
+                    .background(Color.surface1)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
             }
         }
-        .padding(.horizontal)
+        .padding(.horizontal, 20)
     }
     
     private var locationString: String {

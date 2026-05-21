@@ -11,8 +11,11 @@ struct GalleryView: View {
     @State private var exposureToDelete: Exposure?
     @State private var showingDeleteConfirmation = false
     
-    init(roll: FilmRoll, modelContext: ModelContext) {
+    @Binding var path: NavigationPath
+    
+    init(roll: FilmRoll, modelContext: ModelContext, path: Binding<NavigationPath>) {
         _viewModel = State(initialValue: GalleryViewModel(roll: roll, modelContext: modelContext))
+        _path = path
     }
     
     var body: some View {
@@ -76,9 +79,9 @@ struct GalleryView: View {
                 } label: {
                     Image(systemName: "chevron.left")
                         .font(.title3)
-                        .foregroundColor(.white)
+                        .foregroundColor(.appText)
                         .padding(10)
-                        .background(Color(hex: Constants.Design.surface1))
+                        .background(Color.surface1)
                         .clipShape(Circle())
                 }
                 
@@ -87,10 +90,10 @@ struct GalleryView: View {
                 VStack(spacing: 2) {
                     Text("CONTACT SHEET")
                         .font(.custom("InterTight-Bold", size: 14))
-                        .foregroundColor(Color(hex: Constants.Design.muted))
+                        .foregroundColor(.muted)
                     Text("\(viewModel.rollProgress) · \(viewModel.rollMetadata)")
                         .font(.custom("JetBrainsMono-Bold", size: 10))
-                        .foregroundColor(Color(hex: Constants.Design.accent))
+                        .foregroundColor(.accent)
                 }
                 
                 Spacer()
@@ -101,17 +104,19 @@ struct GalleryView: View {
                     } label: {
                         Image(systemName: "square.and.arrow.up")
                             .font(.title3)
-                            .foregroundColor(Color(hex: Constants.Design.accent))
+                            .foregroundColor(.accent)
                     }
                     .accessibilityIdentifier("exportButton")
                     
                     Button {
-                        // Navigate home (pop to root)
-                        // This might require a specialized action or EnvironmentObject for navigation
+                        path = NavigationPath()
                     } label: {
                         Image(systemName: "house")
                             .font(.title3)
-                            .foregroundColor(.white)
+                            .foregroundColor(.appText)
+                            .padding(10)
+                            .background(Color.surface1)
+                            .clipShape(Circle())
                     }
                 }
             }
@@ -128,7 +133,7 @@ struct GalleryView: View {
                         Image(systemName: "rectangle.grid.1x2.fill")
                             .padding(.horizontal, 16)
                             .padding(.vertical, 8)
-                            .background(!viewModel.isGridView ? Color(hex: Constants.Design.surface3) : Color.clear)
+                            .background(!viewModel.isGridView ? Color.surface3 : Color.clear)
                     }
                     
                     Button {
@@ -137,13 +142,13 @@ struct GalleryView: View {
                         Image(systemName: "square.grid.3x3.fill")
                             .padding(.horizontal, 16)
                             .padding(.vertical, 8)
-                            .background(viewModel.isGridView ? Color(hex: Constants.Design.surface3) : Color.clear)
+                            .background(viewModel.isGridView ? Color.surface3 : Color.clear)
                     }
                 }
-                .foregroundColor(.white)
-                .background(Color(hex: Constants.Design.surface1))
+                .foregroundColor(.appText)
+                .background(Color.surface1)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.white.opacity(0.1), lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.appText.opacity(0.1), lineWidth: 1))
             }
             .padding(.horizontal)
             .padding(.vertical, 8)
@@ -164,7 +169,7 @@ struct GalleryView: View {
                 .foregroundColor(.black)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
-                .background(Color(hex: Constants.Design.accent))
+                .background(Color.accent)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             
@@ -178,10 +183,10 @@ struct GalleryView: View {
                     Text("Add from gallery")
                 }
                 .font(.custom("InterTight-Bold", size: 14))
-                .foregroundColor(.white)
+                .foregroundColor(.appText)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
-                .background(Color(hex: Constants.Design.surface1))
+                .background(Color.surface1)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             .accessibilityIdentifier("addFromGalleryButton")

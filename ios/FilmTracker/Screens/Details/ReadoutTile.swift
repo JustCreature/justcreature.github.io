@@ -9,19 +9,19 @@ struct ReadoutTile: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label.uppercased())
                 .font(.custom("InterTight-Medium", size: 10))
-                .foregroundColor(Color(hex: Constants.Design.muted))
+                .foregroundColor(.muted)
             
             Text(value)
                 .font(.custom("JetBrainsMono-Bold", size: 20))
-                .foregroundColor(isDimmed ? Color(hex: Constants.Design.dim) : Color(hex: Constants.Design.accent))
+                .foregroundColor(isDimmed ? .dim : .accent)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(Color(hex: Constants.Design.surface1))
+        .background(Color.surface1)
         .clipShape(RoundedRectangle(cornerRadius: Constants.Design.radiusMD))
         .overlay(
             RoundedRectangle(cornerRadius: Constants.Design.radiusMD)
-                .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                .stroke(Color.appText.opacity(0.05), lineWidth: 1)
         )
     }
 }

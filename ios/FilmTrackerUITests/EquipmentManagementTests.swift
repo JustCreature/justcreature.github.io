@@ -12,8 +12,8 @@ final class EquipmentManagementTests: XCTestCase {
     }
 
     func testCreateCamera() throws {
-        // Tap plus button
-        app.buttons["addEquipmentButton"].tap()
+        // Tap FAB
+        app.buttons["addEquipmentFAB"].tap()
         
         // Fill form
         let makeField = app.textFields["cameraMakeInput"]
@@ -64,8 +64,8 @@ final class EquipmentManagementTests: XCTestCase {
         // Switch to Lenses tab
         app.buttons["segmentButton_1"].tap()
         
-        // Tap plus button
-        app.buttons["addEquipmentButton"].tap()
+        // Tap FAB
+        app.buttons["addEquipmentFAB"].tap()
         
         // Fill form
         let nameField = app.textFields["lensNameInput"]
@@ -95,8 +95,8 @@ final class EquipmentManagementTests: XCTestCase {
         // Switch to Lenses tab
         app.buttons["segmentButton_1"].tap()
         
-        // Tap plus button
-        app.buttons["addEquipmentButton"].tap()
+        // Tap FAB
+        app.buttons["addEquipmentFAB"].tap()
         
         // Fill form
         let nameField = app.textFields["lensNameInput"]

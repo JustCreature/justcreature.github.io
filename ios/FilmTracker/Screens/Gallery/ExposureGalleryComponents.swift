@@ -19,11 +19,11 @@ struct ExposureStripCard: View {
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                 } else {
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(LinearGradient(colors: [Color(hex: Constants.Design.surface2), Color(hex: Constants.Design.surface1)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .fill(LinearGradient(colors: [.surface2, .surface1], startPoint: .topLeading, endPoint: .bottomTrailing))
                         .frame(width: 92, height: 92)
                     
                     Image(systemName: "photo")
-                        .foregroundColor(Color(hex: Constants.Design.dim))
+                        .foregroundColor(.dim)
                         .frame(width: 92, height: 92)
                 }
                 
@@ -42,7 +42,7 @@ struct ExposureStripCard: View {
                 HStack {
                     Text(exposure.capturedAt.formatted(date: .abbreviated, time: .shortened))
                         .font(.custom("JetBrainsMono-Regular", size: 10))
-                        .foregroundColor(Color(hex: Constants.Design.muted))
+                        .foregroundColor(.muted)
                     
                     Spacer()
                     
@@ -50,10 +50,10 @@ struct ExposureStripCard: View {
                         Button(action: onCopyPrevious) {
                             Text("COPY PREV")
                                 .font(.custom("JetBrainsMono-Bold", size: 10))
-                                .foregroundColor(Color(hex: Constants.Design.accent))
+                                .foregroundColor(.accent)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .background(Color(hex: Constants.Design.accent).opacity(0.1))
+                                .background(Color.accent.opacity(0.1))
                                 .clipShape(Capsule())
                         }
                     }
@@ -71,7 +71,7 @@ struct ExposureStripCard: View {
                 if let note = exposure.additionalInfo, !note.isEmpty {
                     Text(note)
                         .font(.custom("InterTight-Regular", size: 12))
-                        .foregroundColor(Color(hex: Constants.Design.text))
+                        .foregroundColor(.appText)
                         .lineLimit(1)
                 }
             }
@@ -85,16 +85,16 @@ struct ExposureStripCard: View {
                 }
             } label: {
                 Image(systemName: "ellipsis")
-                    .foregroundColor(Color(hex: Constants.Design.dim))
+                    .foregroundColor(.dim)
                     .padding(8)
             }
         }
         .padding(12)
-        .background(Color(hex: Constants.Design.surface1))
+        .background(Color.surface1)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                .stroke(Color.appText.opacity(0.05), lineWidth: 1)
         )
     }
 }
@@ -105,10 +105,10 @@ struct ExifChip: View {
     var body: some View {
         Text(text)
             .font(.custom("JetBrainsMono-Bold", size: 10))
-            .foregroundColor(Color(hex: Constants.Design.accent))
+            .foregroundColor(.accent)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
-            .background(Color(hex: Constants.Design.surface2))
+            .background(Color.surface2)
             .clipShape(RoundedRectangle(cornerRadius: 4))
     }
 }
@@ -127,7 +127,7 @@ struct ExposureGridCell: View {
                     .clipped()
             } else {
                 Rectangle()
-                    .fill(LinearGradient(colors: [Color(hex: Constants.Design.surface2), Color(hex: Constants.Design.surface1)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .fill(LinearGradient(colors: [.surface2, .surface1], startPoint: .topLeading, endPoint: .bottomTrailing))
                     .aspectRatio(1, contentMode: .fill)
             }
             
@@ -163,7 +163,7 @@ struct ExposureGridCell: View {
             .shadow(color: .black, radius: 2)
             .padding(4)
         }
-        .background(Color(hex: Constants.Design.surface1))
+        .background(Color.surface1)
         .clipShape(RoundedRectangle(cornerRadius: 4))
     }
 }

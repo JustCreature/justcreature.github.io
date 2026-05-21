@@ -8,6 +8,8 @@ struct LensListView: View {
     @State private var lensToEdit: Lens?
     @State private var lensToDelete: Lens?
     
+    let onAdd: () -> Void
+    
     var body: some View {
         Group {
             if lenses.isEmpty {
@@ -17,6 +19,7 @@ struct LensListView: View {
                     bodyText: "Add lenses to track focal length and maximum aperture per shot.",
                     actionTitle: "Add Lens"
                 ) {
+                    onAdd()
                 }
                 .padding(.top, 40)
             } else {
@@ -77,7 +80,7 @@ extension Lens: Identifiable {}
 #Preview {
     ZStack {
         Color.appBg.ignoresSafeArea()
-        LensListView()
+        LensListView(onAdd: {})
             .modelContainer(for: Lens.self, inMemory: true)
     }
 }

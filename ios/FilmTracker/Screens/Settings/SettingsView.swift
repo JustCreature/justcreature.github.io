@@ -138,22 +138,21 @@ struct SettingsView: View {
     private var header: some View {
         HStack {
             Button {
-                dismiss()
+            dismiss()
             } label: {
-                Image(systemName: "chevron.left")
-                    .font(.title3)
-                    .foregroundColor(.white)
-                    .padding(10)
-                    .background(Color.surface1)
-                    .clipShape(Circle())
+            Image(systemName: "chevron.left")
+                .font(.title3)
+                .foregroundColor(.appText)
+                .padding(10)
+                .background(Color.surface1)
+                .clipShape(Circle())
             }
-            
+
             Spacer()
-            
+
             Text("SETTINGS")
-                .font(.appHeadline(16))
-                .foregroundColor(.white)
-            
+            .font(.appHeadline(16))
+            .foregroundColor(.appText)            
             Spacer()
             
             // Empty spacer to balance header

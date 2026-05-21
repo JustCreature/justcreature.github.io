@@ -8,6 +8,8 @@ struct CameraListView: View {
     @State private var cameraToEdit: Camera?
     @State private var cameraToDelete: Camera?
     
+    let onAdd: () -> Void
+    
     var body: some View {
         Group {
             if cameras.isEmpty {
@@ -17,6 +19,7 @@ struct CameraListView: View {
                     bodyText: "Add your camera bodies to track which one shot each roll.",
                     actionTitle: "Add Camera"
                 ) {
+                    onAdd()
                 }
                 .padding(.top, 40)
             } else {
@@ -70,7 +73,7 @@ extension Camera: Identifiable {} // SwiftData @Model is already Identifiable bu
 #Preview {
     ZStack {
         Color.appBg.ignoresSafeArea()
-        CameraListView()
+        CameraListView(onAdd: {})
             .modelContainer(for: Camera.self, inMemory: true)
     }
 }

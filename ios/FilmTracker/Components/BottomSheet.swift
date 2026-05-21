@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct BottomSheet<Content: View>: View {
+    @Environment(\.dismiss) private var dismiss
     @Binding var isPresented: Bool
     var title: String?
     var content: Content
@@ -21,10 +22,26 @@ struct BottomSheet<Content: View>: View {
                 .padding(.bottom, 16)
             
             if let title = title {
-                Text(title)
-                    .font(.appHeadline(18))
-                    .foregroundColor(.appText)
-                    .padding(.bottom, 20)
+                HStack {
+                    Spacer()
+                    Text(title)
+                        .font(.appHeadline(18))
+                        .foregroundColor(.appText)
+                    Spacer()
+                }
+                .padding(.bottom, 20)
+                .overlay(alignment: .topLeading) {
+                    Button {
+                        isPresented = false
+                        dismiss()
+                    } label: {
+                        Text("Cancel")
+                            .font(.appBody(14))
+                            .foregroundColor(.accent)
+                    }
+                    .padding(.leading, 0)
+                    .padding(.top, -10)
+                }
             }
             
             content

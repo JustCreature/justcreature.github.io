@@ -34,9 +34,19 @@ struct EmptyStateView: View {
             }
             
             if let actionTitle = actionTitle, let action = action {
-                AppButton(title: actionTitle, variant: .primary, action: action)
-                    .frame(width: 200)
-                    .padding(.top, 10)
+                Button {
+                    action()
+                } label: {
+                    Text(actionTitle)
+                        .font(.appLabel(16))
+                        .padding(.vertical, 14)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.accent)
+                        .foregroundColor(.black)
+                        .cornerRadius(Constants.Design.radiusMD)
+                }
+                .frame(width: 200)
+                .padding(.top, 10)
             }
         }
         .padding()

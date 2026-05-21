@@ -25,14 +25,14 @@ struct FilterPillsView: View {
                                 .opacity(0.6)
                         }
                         .font(.appHeadline(14))
-                        .foregroundColor(selectedFilter == filter ? .black : .white)
+                        .foregroundColor(selectedFilter == filter ? .black : .appText)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
                         .background(selectedFilter == filter ? Color.accent : Color.surface1)
                         .cornerRadius(Constants.Design.radiusPill)
                         .overlay(
                             Capsule()
-                                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                                .stroke(Color.appText.opacity(0.1), lineWidth: 1)
                         )
                     }
                     .accessibilityIdentifier("filter_\(filter.rawValue.lowercased())")
@@ -153,13 +153,13 @@ struct RollsView: View {
                 let rollId = roll.id
                 let exposureCount = allExposures.filter { $0.filmRollId == rollId }.count
                 if exposureCount >= roll.totalExposures {
-                    GalleryView(roll: roll, modelContext: modelContext)
+                    GalleryView(roll: roll, modelContext: modelContext, path: $navigationPath)
                 } else {
-                    CaptureView(roll: roll, modelContext: modelContext)
+                    CaptureView(roll: roll, modelContext: modelContext, path: $navigationPath)
                 }
             }
             .navigationDestination(for: GalleryDestination.self) { destination in
-                GalleryView(roll: destination.roll, modelContext: modelContext)
+                GalleryView(roll: destination.roll, modelContext: modelContext, path: $navigationPath)
             }
             .navigationDestination(for: Exposure.self) { exposure in
                 DetailsView(exposure: exposure, modelContext: modelContext)
@@ -178,7 +178,7 @@ struct RollsView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink(destination: SettingsView()) {
                         Image(systemName: "gearshape")
-                            .foregroundColor(.white)
+                            .foregroundColor(.appText)
                     }
                 }
             }

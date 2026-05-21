@@ -1,7 +1,7 @@
 PROJECT_NAME = FilmTracker
 BUNDLE_ID = com.filmtracker.FilmTracker
-DESTINATION = platform=iOS Simulator,name=iPhone 17
-SIM_NAME = iPhone 17
+DESTINATION = platform=iOS Simulator,name=iPhone 15
+SIM_NAME = iPhone 15
 
 .PHONY: up down clean test build install launch generate
 
@@ -31,6 +31,13 @@ install:
 launch:
 	xcrun simctl launch booted $(BUNDLE_ID)
 
+# Uninstalls the app and clears all local data.
+reset:
+	xcrun simctl boot "$(SIM_NAME)" || true
+	xcrun simctl uninstall booted $(BUNDLE_ID) || true
+	rm -rf build
+	$(MAKE) up
+
 # Shuts down the simulator.
 down:
 	xcrun simctl shutdown booted || true
@@ -46,3 +53,6 @@ test:
 clean:
 	rm -rf build
 	rm -rf $(PROJECT_NAME).xcodeproj
+
+
+# To resume this session: gemini --resume 9a3368e1-3312-4609-903d-f69bc350ffc5

@@ -7,7 +7,7 @@ struct EquipmentView: View {
     @State private var showingAddSheet = false
     
     var body: some View {
-        ZStack {
+        ZStack(alignment: .bottomTrailing) {
             Color.appBg.ignoresSafeArea()
             
             VStack(spacing: 0) {
@@ -16,25 +16,37 @@ struct EquipmentView: View {
                 segmentPicker
                 
                 if selectedSegment == 0 {
-                    CameraListView()
+                    CameraListView(onAdd: { showingAddSheet = true })
                 } else {
-                    LensListView()
+                    LensListView(onAdd: { showingAddSheet = true })
                 }
                 
                 Spacer()
             }
+            
+            // FAB
+            Button {
+                showingAddSheet = true
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundColor(.black)
+                    .frame(width: 60, height: 60)
+                    .background(Color.accent)
+                    .clipShape(Circle())
+                    .shadow(color: Color.accent.opacity(0.3), radius: 10, x: 0, y: 5)
+            }
+            .padding(24)
+            .accessibilityIdentifier("addEquipmentFAB")
         }
         .navigationTitle("Equipment")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    showingAddSheet = true
-                } label: {
-                    Image(systemName: "plus")
-                        .foregroundColor(.accent)
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink(destination: SettingsView()) {
+                    Image(systemName: "gearshape")
+                        .foregroundColor(.appText)
                 }
-                .accessibilityIdentifier("addEquipmentButton")
             }
         }
         .sheet(isPresented: $showingAddSheet) {

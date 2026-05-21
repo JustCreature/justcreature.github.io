@@ -19,8 +19,11 @@ struct CaptureView: View {
     @State private var activePicker: ActivePicker = .none
     @State private var cameraAuthorized: Bool = true
     
-    init(roll: FilmRoll, modelContext: ModelContext) {
+    @Binding var path: NavigationPath
+    
+    init(roll: FilmRoll, modelContext: ModelContext, path: Binding<NavigationPath>) {
         _viewModel = State(initialValue: CaptureViewModel(roll: roll, modelContext: modelContext))
+        _path = path
     }
     
     var body: some View {
@@ -113,6 +116,7 @@ struct CaptureView: View {
             }
         }
         .navigationBarHidden(true)
+        .preferredColorScheme(.dark)
         .sheet(isPresented: $showNoteSheet) {
             NoteSheet(note: $viewModel.pendingNote)
                 .presentationDetents([.height(300)])
@@ -192,6 +196,16 @@ struct CaptureView: View {
                         .clipShape(Circle())
                 }
                 .accessibilityIdentifier("galleryButton")
+                
+                Button {
+                    path = NavigationPath()
+                } label: {
+                    Image(systemName: "house")
+                        .foregroundColor(.white)
+                        .padding(10)
+                        .background(.ultraThinMaterial)
+                        .clipShape(Circle())
+                }
                 
                 VStack(spacing: 8) {
                     toggleButton(icon: "grid", active: $viewModel.showGrid)
